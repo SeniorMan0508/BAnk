@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Reserve | Private Wealth & Digital Banking</title>
+  <meta name="description" content="Apex Reserve Private Banking - Manage high-tier digital wealth, instant wire transfers, and asset tracking.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Background ambient glow effects -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Confetti canvas for celebrations -->
+  <canvas id="confettiCanvas"></canvas>
+
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="url(#brandGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="url(#brandGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="url(#brandGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <defs>
+              <linearGradient id="brandGrad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#10B981" />
+                <stop offset="1" stop-color="#3B82F6" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">APEX RESERVE</span>
+          <span class="brand-badge">PRIVATE CLIENT</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <a href="#dashboard" class="nav-item active" data-tab="dashboard">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="#transfer" class="nav-item" data-tab="transfer" id="navTransferBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+          <span>Send Money</span>
+          <span class="badge-instant">Instant</span>
+        </a>
+        <a href="#transactions" class="nav-item" data-tab="transactions">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span>Transactions</span>
+        </a>
+        <a href="#cards" class="nav-item" data-tab="cards">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+          <span>Reserve Cards</span>
+        </a>
+        <a href="#vault" class="nav-item" data-tab="vault">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="12" cy="12" r="3"/><line x1="12" x2="12" y1="3" y2="6"/><line x1="12" x2="12" y1="18" y2="21"/><line x1="3" x2="6" y1="12" y2="12"/><line x1="18" x2="21" y1="12" y2="12"/></svg>
+          <span>Vault & Assets</span>
+        </a>
+        <a href="#investments" class="nav-item" data-tab="investments">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          <span>Investments & Stocks</span>
+        </a>
+        <a href="#loans" class="nav-item" data-tab="loans">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+          <span>Credit & Loans</span>
+        </a>
+        <a href="#billpay" class="nav-item" data-tab="billpay">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+          <span>Bill Pay & Autopay</span>
+        </a>
+        <a href="#crypto" class="nav-item" data-tab="crypto">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+          <span>Crypto Custody</span>
+        </a>
+        <a href="#concierge" class="nav-item" data-tab="concierge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>VIP Concierge</span>
+          <span class="badge-instant" style="background: rgba(230, 198, 135, 0.2); color: #E6C687; border-color: rgba(230, 198, 135, 0.4);">Director</span>
+        </a>
+        <a href="#security" class="nav-item" data-tab="security">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Security & Controls</span>
+        </a>
+      </nav>
+
+      <!-- Account tier card -->
+      <div class="tier-card">
+        <div class="tier-header">
+          <div class="tier-pill">Tier 1 Elite</div>
+          <span class="tier-status">FDIC Insured</span>
+        </div>
+        <p class="tier-desc">Wire limit: $10,000,000 / day</p>
+        <div class="tier-progress-bg">
+          <div class="tier-progress-fill" style="width: 100%"></div>
+        </div>
+        <button class="btn-text-small" id="resetDemoBtn" title="Reset balance back to $500,000 default">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Reset Demo to $500,000
+        </button>
+      </div>
+
+      <!-- User Profile snippet -->
+      <div class="sidebar-user">
+        <div class="user-avatar-wrap">
+          <div class="user-avatar">AR</div>
+          <div class="online-indicator"></div>
+        </div>
+        <div class="user-details">
+          <span class="user-name">Alexander Reed</span>
+          <span class="user-acc">Private Acc: #8920-410</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-viewport">
+      <!-- Top Header Navigation -->
+      <header class="topbar">
+        <div class="topbar-search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="globalSearchInput" placeholder="Search transactions, recipients, transfers...">
+        </div>
+
+        <div class="topbar-actions">
+          <!-- Sound toggle -->
+          <button class="icon-btn" id="soundToggleBtn" title="Toggle Sound Effects">
+            <svg id="soundIconOn" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          </button>
+
+          <!-- Quick Send Action Button -->
+          <button class="btn btn-primary" id="openSendModalBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+            <span>Send Money</span>
+          </button>
+
+          <!-- Deposit Button -->
+          <button class="btn btn-secondary" id="openDepositModalBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14"/><path d="m5 12 7-7 7 7"/></svg>
+            <span>Deposit Funds</span>
+          </button>
+
+          <div class="user-pill">
+            <span class="live-dot"></span>
+            <span>Fedwire Live</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Dynamic Views Container -->
+      <div class="content-container">
+
+        <!-- TAB: DASHBOARD -->
+        <section id="view-dashboard" class="tab-view active">
+          
+          <!-- Hero Wealth Overview Grid -->
+          <div class="wealth-overview-grid">
+            
+            <!-- Main Total Balance Display Card -->
+            <div class="balance-card glass-panel">
+              <div class="balance-header">
+                <div class="balance-title-group">
+                  <span class="section-subtitle">TOTAL COMBINED LIQUIDITY</span>
+                  <div class="balance-toggle-wrap">
+                    <h1 class="total-balance-number" id="displayTotalBalance">$500,000.00</h1>
+                    <button class="icon-toggle-btn" id="toggleBalanceVisibilityBtn" title="Hide/Show balance">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="currency-tag">
+                  <span class="currency-flag">🇺🇸</span>
+                  <span>USD</span>
+                </div>
+              </div>
+
+              <!-- Available and breakdown bars -->
+              <div class="balance-meta-row">
+                <div class="meta-item">
+                  <span class="meta-label">Available for Immediate Transfer</span>
+                  <span class="meta-value text-emerald" id="displayAvailableBalance">$500,000.00</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Pending Settlements</span>
+                  <span class="meta-value">$0.00</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Account Routing (ABA)</span>
+                  <span class="meta-value font-mono">021000089</span>
+                </div>
+              </div>
+
+              <!-- Sub-account distribution -->
+              <div class="sub-accounts-grid">
+                <div class="sub-account-item">
+                  <div class="sub-account-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                  </div>
+                  <div class="sub-account-info">
+                    <span class="sub-account-name">Primary Private Checking</span>
+                    <span class="sub-account-num">•• 9402</span>
+                  </div>
+                  <span class="sub-account-val" id="displayCheckingBalance">$420,000.00</span>
+                </div>
+
+                <div class="sub-account-item">
+                  <div class="sub-account-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/></svg>
+                  </div>
+                  <div class="sub-account-info">
+                    <span class="sub-account-name">High-Yield Treasury Yield (5.2% APY)</span>
+                    <span class="sub-account-num">•• 3318</span>
+                  </div>
+                  <span class="sub-account-val" id="displaySavingsBalance">$80,000.00</span>
+                </div>
+              </div>
+
+              <!-- Action buttons row -->
+              <div class="balance-actions-row">
+                <button class="btn btn-primary" id="cardSendActionBtn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                  Transfer Funds
+                </button>
+                <button class="btn btn-secondary" id="cardDepositActionBtn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14"/><path d="m5 12 7-7 7 7"/></svg>
+                  Add Wire Inflow
+                </button>
+                <button class="btn btn-ghost" id="viewStatementBtn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  Download Statement
+                </button>
+              </div>
+            </div>
+
+            <!-- Virtual Titanium Card Interactive Widget -->
+            <div class="metal-card-panel glass-panel">
+              <div class="card-panel-header">
+                <span class="section-subtitle">PHYSICAL & DIGITAL CARD</span>
+                <span class="card-badge-chip">Obsidian Titanium</span>
+              </div>
+
+              <!-- 3D Interactive Card Visual -->
+              <div class="card-perspective-container">
+                <div class="black-titanium-card" id="interactiveCard">
+                  <div class="card-sheen"></div>
+                  <div class="card-top-row">
+                    <div class="card-chip">
+                      <div class="chip-line"></div>
+                      <div class="chip-line"></div>
+                    </div>
+                    <svg class="contactless-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1.5-3.5"/><path d="M5.5 17.5A6.5 6.5 0 0 0 12 11c0-3-1-4.5-3-7.5"/><path d="M2.5 20.5A10.5 10.5 0 0 0 13 10c0-4.5-1.5-6.5-4.5-11"/></svg>
+                    <span class="card-brand-logo">APEX RESERVE</span>
+                  </div>
+
+                  <div class="card-number-row" id="cardNumberDisplay">
+                    <span>4920</span>
+                    <span>8812</span>
+                    <span>3904</span>
+                    <span>7721</span>
+                  </div>
+
+                  <div class="card-bottom-row">
+                    <div class="card-holder-info">
+                      <span class="card-meta-label">CARDHOLDER</span>
+                      <span class="card-holder-name">ALEXANDER REED</span>
+                    </div>
+                    <div class="card-exp-info">
+                      <span class="card-meta-label">EXPIRES</span>
+                      <span class="card-exp-date">09/29</span>
+                    </div>
+                    <div class="card-cvv-info">
+                      <span class="card-meta-label">CVV</span>
+                      <span class="card-cvv-value" id="cardCvvVal">•••</span>
+                    </div>
+                    <div class="visa-logo">
+                      <span>VISA</span>
+                      <small>INFINITE</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card quick controls -->
+              <div class="card-controls-row">
+                <button class="card-ctrl-btn" id="toggleFreezeCardBtn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <span id="freezeBtnText">Freeze Card</span>
+                </button>
+                <button class="card-ctrl-btn" id="revealCvvBtn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <span>Reveal CVV</span>
+                </button>
+                <button class="card-ctrl-btn" id="copyCardNumBtn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  <span>Copy Number</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Live Market Pulse Ticker Bar -->
+          <div class="market-pulse-bar glass-panel">
+            <div class="pulse-tag">
+              <span class="live-dot"></span>
+              <strong>FEDLINE PULSE</strong>
+            </div>
+            <div class="pulse-items-ticker">
+              <div class="pulse-tick"><span class="tick-k">Fed Funds Rate:</span> <span class="tick-v text-emerald">5.33%</span></div>
+              <div class="pulse-tick"><span class="tick-k">SOFR Index:</span> <span class="tick-v text-emerald">5.31%</span></div>
+              <div class="pulse-tick"><span class="tick-k">Gold (XAU/USD):</span> <span class="tick-v" style="color: var(--gold-accent);">$2,662.40/oz (+0.84%)</span></div>
+              <div class="pulse-tick"><span class="tick-k">EUR / USD:</span> <span class="tick-v">1.0842</span></div>
+              <div class="pulse-tick"><span class="tick-k">GBP / USD:</span> <span class="tick-v">1.3021</span></div>
+              <div class="pulse-tick"><span class="tick-k">Bitcoin (BTC):</span> <span class="tick-v text-cyan">$62,540.00 (+2.9%)</span></div>
+            </div>
+          </div>
+
+          <!-- Executive Command Shortcuts Bar -->
+          <div class="exec-command-bar glass-panel">
+            <button class="cmd-pill-btn" id="cmdRequestFundsBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span>Request Wire Inflow</span>
+            </button>
+            <button class="cmd-pill-btn" id="cmdFxSwapBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+              <span>Instant FX Converter</span>
+            </button>
+            <button class="cmd-pill-btn" id="cmdViewRoutingBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="12" cy="12" r="3"/><line x1="12" x2="12" y1="3" y2="6"/><line x1="12" x2="12" y1="18" y2="21"/></svg>
+              <span>Wire Routing & ABA</span>
+            </button>
+            <button class="cmd-pill-btn" id="cmdNewVaultGoalBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+              <span>Treasury Goals</span>
+            </button>
+            <button class="cmd-pill-btn" id="cmdPrintStatementBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+              <span>Print Official Statement</span>
+            </button>
+          </div>
+
+          <!-- Quick Transfer Tray -->
+          <div class="quick-transfer-bar glass-panel">
+            <div class="quick-transfer-header">
+              <div>
+                <span class="section-subtitle">FAVORITE RECIPIENTS</span>
+                <h3 class="section-title">One-Click Wire Payees</h3>
+              </div>
+              <button class="btn btn-secondary btn-sm" id="quickSendCustomBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                <span>Add Payee</span>
+              </button>
+            </div>
+
+            <div class="payee-avatar-list" id="payeeAvatarList">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Two column section: Analytics & Recent Transfers -->
+          <div class="dashboard-split-grid">
+            
+            <!-- Recent Transactions Table / Activity -->
+            <div class="transactions-panel glass-panel">
+              <div class="panel-header">
+                <div>
+                  <span class="section-subtitle">LEDGER ACTIVITY</span>
+                  <h3 class="section-title">Recent Transactions</h3>
+                </div>
+                <div class="filter-pills" id="txFilterGroup">
+                  <button class="filter-pill active" data-filter="all">All</button>
+                  <button class="filter-pill" data-filter="outflow">Transfers</button>
+                  <button class="filter-pill" data-filter="inflow">Inflows</button>
+                </div>
+              </div>
+
+              <!-- Transactions List -->
+              <div class="transactions-list-wrap" id="dashboardTxList">
+                <!-- Injected via JavaScript -->
+              </div>
+
+              <div class="panel-footer">
+                <button class="btn-text" id="viewAllTxBtn">
+                  View Full History & Audit Logs
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Spending & Asset Breakdown -->
+            <div class="analytics-panel glass-panel">
+              <div class="panel-header">
+                <div>
+                  <span class="section-subtitle">PORTFOLIO INSIGHTS</span>
+                  <h3 class="section-title">Monthly Capital Flow</h3>
+                </div>
+                <span class="badge-status-green">Verified Healthy</span>
+              </div>
+
+              <div class="chart-container">
+                <div class="chart-summary-row">
+                  <div>
+                    <span class="chart-stat-label">Total Outflows (This Month)</span>
+                    <h4 class="chart-stat-val text-rose" id="monthlyOutflowTotal">$0.00</h4>
+                  </div>
+                  <div>
+                    <span class="chart-stat-label">Daily Transfer Limit Remaining</span>
+                    <h4 class="chart-stat-val text-cyan" id="dailyLimitRemaining">$250,000.00</h4>
+                  </div>
+                </div>
+
+                <!-- Custom SVG Graph representation -->
+                <div class="svg-graph-wrap">
+                  <svg class="graph-svg" viewBox="0 0 400 160" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#10B981" stop-opacity="0.35"/>
+                        <stop offset="100%" stop-color="#10B981" stop-opacity="0.0"/>
+                      </linearGradient>
+                    </defs>
+                    <path class="graph-area" d="M 0 130 C 50 110, 80 140, 130 90 C 180 40, 220 70, 280 40 C 330 20, 360 50, 400 30 L 400 160 L 0 160 Z" fill="url(#chartGrad)"></path>
+                    <path class="graph-line" d="M 0 130 C 50 110, 80 140, 130 90 C 180 40, 220 70, 280 40 C 330 20, 360 50, 400 30" fill="none" stroke="#10B981" stroke-width="3.5" stroke-linecap="round"></path>
+                    <!-- Points -->
+                    <circle cx="130" cy="90" r="4.5" fill="#10B981" stroke="#0B0F17" stroke-width="2.5"></circle>
+                    <circle cx="280" cy="40" r="4.5" fill="#10B981" stroke="#0B0F17" stroke-width="2.5"></circle>
+                    <circle cx="400" cy="30" r="5" fill="#34D399" stroke="#0B0F17" stroke-width="2.5"></circle>
+                  </svg>
+                  <div class="graph-labels">
+                    <span>Week 1</span>
+                    <span>Week 2</span>
+                    <span>Week 3</span>
+                    <span>Current Day</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Security Features list -->
+              <div class="security-badges-list">
+                <div class="security-item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <div>
+                    <strong>Quantum-Grade 256-bit Encryption</strong>
+                    <p>All transfers settled via Federal Reserve Bank Direct Fedline</p>
+                  </div>
+                </div>
+                <div class="security-item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+                  <div>
+                    <strong>Zero-Latency Instant Settlement</strong>
+                    <p>Funds clear in 1.4 seconds with immutable verification</p>
+                  </div>
+                </div>
+              </div>
+
+          <!-- ============================================== -->
+          <!-- DASHBOARD FEATURE 1: GLOBAL TREASURY & FX SWAP -->
+          <!-- ============================================== -->
+          <div class="glass-panel" style="padding: 32px; margin-top: 24px;" id="dashboardFxPanel">
+            <div class="panel-header" style="padding: 0 0 16px;">
+              <div>
+                <span class="section-subtitle">GLOBAL MULTI-CURRENCY VAULT</span>
+                <h3 class="section-title">Offshore Foreign Exchange & Treasury Balances</h3>
+              </div>
+              <span class="badge-status-green">Direct SWIFT RTGS Rail Active</span>
+            </div>
+
+            <!-- 4 Currency Cards -->
+            <div class="market-tickers-grid" style="margin: 20px 0 24px;">
+              <div class="ticker-card glass-panel" style="background: rgba(255,255,255,0.03);">
+                <div class="ticker-top">
+                  <span class="ticker-symbol">🇺🇸 USD (DOMESTIC)</span>
+                  <span class="ticker-change text-emerald">PRIMARY</span>
+                </div>
+                <div class="ticker-name">Apex Reserve Primary Checking</div>
+                <div class="ticker-val" id="dashFxUsdBal">$500,000.00</div>
+                <div class="ticker-holding">ABA: 021000089 • Available Now</div>
+              </div>
+
+              <div class="ticker-card glass-panel" style="background: rgba(255,255,255,0.03);">
+                <div class="ticker-top">
+                  <span class="ticker-symbol">🇪🇺 EUR (EUROZONE)</span>
+                  <span class="ticker-change text-emerald">1.0842 FX</span>
+                </div>
+                <div class="ticker-name">Frankfurt Interbank Sub-Account</div>
+                <div class="ticker-val" id="dashFxEurBal">€120,500.00</div>
+                <div class="ticker-holding">IBAN: DE89 5001 0517 • (~$130,646 USD)</div>
+              </div>
+
+              <div class="ticker-card glass-panel" style="background: rgba(255,255,255,0.03);">
+                <div class="ticker-top">
+                  <span class="ticker-symbol">🇬🇧 GBP (STERLING)</span>
+                  <span class="ticker-change text-emerald">1.3021 FX</span>
+                </div>
+                <div class="ticker-name">London City Clearing Reserve</div>
+                <div class="ticker-val" id="dashFxGbpBal">£85,000.00</div>
+                <div class="ticker-holding">Sort: 40-02-18 • (~$110,678 USD)</div>
+              </div>
+
+              <div class="ticker-card glass-panel" style="background: rgba(255,255,255,0.03);">
+                <div class="ticker-top">
+                  <span class="ticker-symbol">🇨🇭 CHF (SWISS FRANC)</span>
+                  <span class="ticker-change text-emerald">1.1600 FX</span>
+                </div>
+                <div class="ticker-name">Zurich Paradeplatz Freezone Vault</div>
+                <div class="ticker-val" id="dashFxChfBal">₣150,000.00</div>
+                <div class="ticker-holding">Safe-Haven Vault • (~$174,000 USD)</div>
+              </div>
+            </div>
+
+            <!-- Built-In FX Swap Calculator Desk -->
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 22px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <span class="section-subtitle">INSTANT MID-MARKET FX CONVERTER</span>
+                <span style="font-size: 0.75rem; color: var(--emerald-light); font-weight: 700;">Zero Markup • Real-Time Interbank Rate</span>
+              </div>
+
+              <form id="dashFxSwapForm" style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 140px;">
+                  <label class="field-label">Convert From</label>
+                  <select id="fxFromSelect" class="form-control" style="background: rgba(255,255,255,0.06);">
+                    <option value="USD">USD ($ - US Dollar)</option>
+                    <option value="EUR">EUR (€ - Euro)</option>
+                    <option value="GBP">GBP (£ - British Pound)</option>
+                    <option value="CHF">CHF (₣ - Swiss Franc)</option>
+                  </select>
+                </div>
+
+                <div style="flex: 1; min-width: 160px;">
+                  <label class="field-label">Send Amount</label>
+                  <input type="number" id="fxFromAmount" class="form-control font-mono" value="25000" min="100" step="100" required>
+                </div>
+
+                <div style="padding-bottom: 8px;">
+                  <button type="button" class="icon-btn" id="fxSwapDirectionBtn" title="Invert Currencies" style="border-radius: 50%;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                  </button>
+                </div>
+
+                <div style="flex: 1; min-width: 140px;">
+                  <label class="field-label">Convert To</label>
+                  <select id="fxToSelect" class="form-control" style="background: rgba(255,255,255,0.06);">
+                    <option value="EUR" selected>EUR (€ - Euro)</option>
+                    <option value="USD">USD ($ - US Dollar)</option>
+                    <option value="GBP">GBP (£ - British Pound)</option>
+                    <option value="CHF">CHF (₣ - Swiss Franc)</option>
+                  </select>
+                </div>
+
+                <div style="flex: 1.2; min-width: 180px;">
+                  <label class="field-label">Estimated Yield</label>
+                  <div class="form-control font-mono" id="fxCalculatedResult" style="background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.3); color: var(--emerald-light); font-weight: 700;">
+                    ≈ €23,058.48 EUR
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="executeFxSwapBtn" style="padding: 12px 24px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Execute FX Swap</span>
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- ============================================== -->
+          <!-- DASHBOARD FEATURE 2: STRATEGIC WEALTH TARGETS  -->
+          <!-- ============================================== -->
+          <div class="glass-panel" style="padding: 32px; margin-top: 24px;" id="dashboardGoalsPanel">
+            <div class="panel-header" style="padding: 0 0 16px;">
+              <div>
+                <span class="section-subtitle">CAPITAL ALLOCATION VAULTS</span>
+                <h3 class="section-title">Strategic Wealth Targets & Reserve Vaults</h3>
+              </div>
+              <button class="btn btn-secondary btn-sm" id="createCustomGoalBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                <span>New Treasury Target</span>
+              </button>
+            </div>
+
+            <div class="vault-grid" style="margin-top: 20px;" id="treasuryGoalsGrid">
+              <!-- Target 1 -->
+              <div class="glass-panel vault-card" style="background: rgba(255,255,255,0.03);">
+                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                  <div class="vault-icon-circle emerald" style="width: 40px; height: 40px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                  </div>
+                  <span class="tier-pill" style="font-size: 0.68rem;">84% Funded</span>
+                </div>
+                <span class="vault-label" style="font-weight: 700; color: #fff; font-size: 0.95rem;">Bel Air Real Estate Syndicate</span>
+                <h3 class="vault-amount" id="goal1Amount">$420,000.00</h3>
+                <p class="vault-sub">Target: $500,000.00 • Closing Dec 2026</p>
+                <div class="tier-progress-bg" style="width: 100%; height: 6px; margin: 6px 0;">
+                  <div class="tier-progress-fill" id="goal1Bar" style="width: 84%;"></div>
+                </div>
+                <button class="btn btn-secondary btn-sm w-full goal-allocate-btn" data-goal="Bel Air Real Estate" data-amount="10000" data-target="goal1">
+                  Allocate +$10,000 to Vault
+                </button>
+              </div>
+
+              <!-- Target 2 -->
+              <div class="glass-panel vault-card" style="background: rgba(255,255,255,0.03);">
+                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                  <div class="vault-icon-circle blue" style="width: 40px; height: 40px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+                  </div>
+                  <span class="tier-pill" style="font-size: 0.68rem;">74% Funded</span>
+                </div>
+                <span class="vault-label" style="font-weight: 700; color: #fff; font-size: 0.95rem;">Global 7500 Aviation Flight Pool</span>
+                <h3 class="vault-amount" id="goal2Amount">$185,000.00</h3>
+                <p class="vault-sub">Target: $250,000.00 • NetJets 100h Share</p>
+                <div class="tier-progress-bg" style="width: 100%; height: 6px; margin: 6px 0;">
+                  <div class="tier-progress-fill" id="goal2Bar" style="width: 74%; background: linear-gradient(90deg, #3B82F6, #06B6D4);"></div>
+                </div>
+                <button class="btn btn-secondary btn-sm w-full goal-allocate-btn" data-goal="Aviation Flight Pool" data-amount="5000" data-target="goal2">
+                  Allocate +$5,000 to Vault
+                </button>
+              </div>
+
+              <!-- Target 3 -->
+              <div class="glass-panel vault-card" style="background: rgba(255,255,255,0.03);">
+                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                  <div class="vault-icon-circle gold" style="width: 40px; height: 40px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+                  </div>
+                  <span class="tier-pill" style="font-size: 0.68rem;">85% Funded</span>
+                </div>
+                <span class="vault-label" style="font-weight: 700; color: #fff; font-size: 0.95rem;">Swiss Freezone Physical Gold Bullion</span>
+                <h3 class="vault-amount" id="goal3Amount">$85,000.00</h3>
+                <p class="vault-sub">Target: $100,000.00 • Zurich Custody</p>
+                <div class="tier-progress-bg" style="width: 100%; height: 6px; margin: 6px 0;">
+                  <div class="tier-progress-fill" id="goal3Bar" style="width: 85%; background: linear-gradient(90deg, #E6C687, #D97706);"></div>
+                </div>
+                <button class="btn btn-secondary btn-sm w-full goal-allocate-btn" data-goal="Swiss Bullion Vault" data-amount="5000" data-target="goal3">
+                  Allocate +$5,000 to Vault
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ============================================== -->
+          <!-- DASHBOARD FEATURE 3: CASH FLOW & 14-DAY CALENDAR -->
+          <!-- ============================================== -->
+          <div class="dashboard-split-grid" style="margin-top: 24px;">
+            <!-- Left: Capital Outflow Allocation by Category -->
+            <div class="glass-panel" style="padding: 28px;">
+              <div class="panel-header" style="padding: 0 0 16px;">
+                <div>
+                  <span class="section-subtitle">CAPITAL DISTRIBUTION</span>
+                  <h3 class="section-title">Outflow Categorization</h3>
+                </div>
+                <span class="tier-pill">Average: $122.5k / mo</span>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 20px;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
+                    <span style="color: #fff; display: flex; align-items: center; gap: 8px;">
+                      <span class="dot-color" style="background: #3B82F6;"></span>
+                      Private Aviation & Marine Charters
+                    </span>
+                    <strong class="font-mono">$42,500.00 (35%)</strong>
+                  </div>
+                  <div class="tier-progress-bg" style="height: 5px;"><div class="tier-progress-fill" style="width: 35%; background: #3B82F6;"></div></div>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
+                    <span style="color: #fff; display: flex; align-items: center; gap: 8px;">
+                      <span class="dot-color" style="background: #10B981;"></span>
+                      Prime Real Estate Escrow & Mortgages
+                    </span>
+                    <strong class="font-mono">$38,000.00 (31%)</strong>
+                  </div>
+                  <div class="tier-progress-bg" style="height: 5px;"><div class="tier-progress-fill" style="width: 31%; background: #10B981;"></div></div>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
+                    <span style="color: #fff; display: flex; align-items: center; gap: 8px;">
+                      <span class="dot-color" style="background: #E6C687;"></span>
+                      Venture Capital LP Capital Calls
+                    </span>
+                    <strong class="font-mono">$28,500.00 (23%)</strong>
+                  </div>
+                  <div class="tier-progress-bg" style="height: 5px;"><div class="tier-progress-fill" style="width: 23%; background: #E6C687;"></div></div>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
+                    <span style="color: #fff; display: flex; align-items: center; gap: 8px;">
+                      <span class="dot-color" style="background: #EC4899;"></span>
+                      Legal Retainers & Executive Concierge
+                    </span>
+                    <strong class="font-mono">$13,500.00 (11%)</strong>
+                  </div>
+                  <div class="tier-progress-bg" style="height: 5px;"><div class="tier-progress-fill" style="width: 11%; background: #EC4899;"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Upcoming Liquidity Events & Scheduled Timeline -->
+            <div class="glass-panel" style="padding: 28px;">
+              <div class="panel-header" style="padding: 0 0 16px;">
+                <div>
+                  <span class="section-subtitle">PROJECTED CASH FLOW</span>
+                  <h3 class="section-title">Upcoming Liquidity Events (14 Days)</h3>
+                </div>
+                <span class="badge-status-green">Net Positive</span>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2); padding: 12px 16px; border-radius: var(--radius-md);">
+                  <div>
+                    <strong style="color: #fff; font-size: 0.88rem;">Direct Wire: Morgan Stanley Institutional</strong>
+                    <div style="font-size: 0.72rem; color: var(--text-dim);">Tomorrow, 10:00 AM • Treasury Bond Coupon</div>
+                  </div>
+                  <span class="font-mono text-emerald" style="font-weight: 800; font-size: 0.95rem;">+$65,000.00</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2); padding: 12px 16px; border-radius: var(--radius-md);">
+                  <div>
+                    <strong style="color: #fff; font-size: 0.88rem;">LP Venture Dividend Distribution</strong>
+                    <div style="font-size: 0.72rem; color: var(--text-dim);">Sep 28, 2026 • Apex Alpha Fund Series B</div>
+                  </div>
+                  <span class="font-mono text-emerald" style="font-weight: 800; font-size: 0.95rem;">+$42,000.00</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(244,63,94,0.06); border: 1px solid rgba(244,63,94,0.2); padding: 12px 16px; border-radius: var(--radius-md);">
+                  <div>
+                    <strong style="color: #fff; font-size: 0.88rem;">Gulfstream G650 Aviation Charter</strong>
+                    <div style="font-size: 0.72rem; color: var(--text-dim);">Oct 01, 2026 • Monthly Flight Retainer</div>
+                  </div>
+                  <span class="font-mono text-rose" style="font-weight: 800; font-size: 0.95rem;">-$12,500.00</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(244,63,94,0.06); border: 1px solid rgba(244,63,94,0.2); padding: 12px 16px; border-radius: var(--radius-md);">
+                  <div>
+                    <strong style="color: #fff; font-size: 0.88rem;">Fisher Island Superyacht Slip Lease</strong>
+                    <div style="font-size: 0.72rem; color: var(--text-dim);">Oct 05, 2026 • Marina Slip #44</div>
+                  </div>
+                  <span class="font-mono text-rose" style="font-weight: 800; font-size: 0.95rem;">-$8,200.00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ============================================== -->
+          <!-- DASHBOARD FEATURE 4: OFFICIAL WIRE ROUTING     -->
+          <!-- ============================================== -->
+          <div class="glass-panel" style="padding: 32px; margin-top: 24px;" id="dashboardRoutingPanel">
+            <div class="panel-header" style="padding: 0 0 16px;">
+              <div>
+                <span class="section-subtitle">FEDWIRE DIRECT SETTLEMENT CREDENTIALS</span>
+                <h3 class="section-title">Official Account & Wire Routing Instructions</h3>
+              </div>
+              <span class="tier-pill">Copy for Inbound Domestic / Global Wire</span>
+            </div>
+
+            <div class="receipt-data-grid" style="margin-top: 20px; background: rgba(255,255,255,0.02); padding: 22px; border-radius: var(--radius-md);">
+              <div class="receipt-field">
+                <span class="r-label">Receiving Financial Institution</span>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="r-val" style="color: #fff; font-weight: 700;">Apex Reserve Bank, N.A.</span>
+                  <button class="btn-text-small copy-field-btn" data-copy="Apex Reserve Bank, N.A.">Copy</button>
+                </div>
+              </div>
+
+              <div class="receipt-field">
+                <span class="r-label">Fedwire Routing Transit (ABA)</span>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="r-val font-mono" style="color: var(--emerald-light); font-weight: 800; font-size: 1.05rem;">021000089</span>
+                  <button class="btn-text-small copy-field-btn" data-copy="021000089">Copy</button>
+                </div>
+              </div>
+
+              <div class="receipt-field">
+                <span class="r-label">SWIFT / BIC Code (Global Priority)</span>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="r-val font-mono" style="color: var(--cyan-accent); font-weight: 800;">APEXUS33NYC</span>
+                  <button class="btn-text-small copy-field-btn" data-copy="APEXUS33NYC">Copy</button>
+                </div>
+              </div>
+
+              <div class="receipt-field">
+                <span class="r-label">Beneficiary Account Number</span>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="r-val font-mono" style="color: #fff; font-weight: 800;">89204109402</span>
+                  <button class="btn-text-small copy-field-btn" data-copy="89204109402">Copy</button>
+                </div>
+              </div>
+
+              <div class="receipt-field">
+                <span class="r-label">Beneficiary Full Name</span>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="r-val" style="color: #fff; font-weight: 700;">Alexander Reed</span>
+                  <button class="btn-text-small copy-field-btn" data-copy="Alexander Reed">Copy</button>
+                </div>
+              </div>
+
+              <div class="receipt-field">
+                <span class="r-label">Bank Headquarters Address</span>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="r-val" style="color: var(--text-muted);">One Chase Manhattan Plaza, 42nd Fl, New York, NY 10005</span>
+                  <button class="btn-text-small copy-field-btn" data-copy="One Chase Manhattan Plaza, 42nd Fl, New York, NY 10005">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- TAB: TRANSACTIONS (FULL VIEW) -->
+        <section id="view-transactions" class="tab-view">
+          <div class="page-title-banner">
+            <div>
+              <h2 class="view-title">Ledger & Transaction History</h2>
+              <p class="view-desc">Complete immutable record of all outgoing wire transfers, inflows, and asset exchanges.</p>
+            </div>
+            <div class="banner-actions">
+              <button class="btn btn-secondary" id="exportCsvBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="transactions-full-table-panel glass-panel">
+            <div class="table-toolbar">
+              <div class="search-input-group">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" id="fullTxSearchInput" placeholder="Filter by payee name, reference ID, or category...">
+              </div>
+              <div class="filter-pills" id="fullTxFilterGroup">
+                <button class="filter-pill active" data-filter="all">All</button>
+                <button class="filter-pill" data-filter="outflow">Outgoing Transfers</button>
+                <button class="filter-pill" data-filter="inflow">Deposits & Inflows</button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="banking-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Beneficiary / Source</th>
+                    <th>Reference ID</th>
+                    <th>Method</th>
+                    <th>Date & Time</th>
+                    <th>Status</th>
+                    <th class="text-right">Amount</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="fullTransactionsTbody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: CARDS VIEW -->
+        <section id="view-cards" class="tab-view">
+          <div class="page-title-banner">
+            <div>
+              <h2 class="view-title">Card Portfolio</h2>
+              <p class="view-desc">Manage physical metal cards, single-use burner cards, and corporate limits.</p>
+            </div>
+          </div>
+
+          <div class="cards-gallery-grid">
+            <!-- Card 1 -->
+            <div class="card-management-box glass-panel">
+              <div class="card-preview-art black-art">
+                <span class="card-art-type">APEX BLACK TITANIUM</span>
+                <span class="card-art-num">•••• •••• •••• 7721</span>
+                <div class="card-art-bottom">
+                  <span>ALEXANDER REED</span>
+                  <span>EXP 09/29</span>
+                </div>
+              </div>
+              <div class="card-details-form">
+                <div class="card-attr-row">
+                  <span>Card Status</span>
+                  <span class="badge-status-green" id="cardStatusBadge">Active & Ready</span>
+                </div>
+                <div class="card-attr-row">
+                  <span>Spending Limit</span>
+                  <span>$250,000 / transaction</span>
+                </div>
+                <div class="card-attr-row">
+                  <span>Apple Pay / Google Wallet</span>
+                  <span class="text-emerald">Synchronized</span>
+                </div>
+                <div class="card-btn-stack">
+                  <button class="btn btn-secondary w-full" id="secondaryFreezeBtn">Toggle Freeze Card</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: Virtual Burner Card -->
+            <div class="card-management-box glass-panel">
+              <div class="card-preview-art blue-art">
+                <span class="card-art-type">VIRTUAL SINGLE-USE</span>
+                <span class="card-art-num">•••• •••• •••• 1042</span>
+                <div class="card-art-bottom">
+                  <span>ONLINE ESCROW</span>
+                  <span>EXP 12/26</span>
+                </div>
+              </div>
+              <div class="card-details-form">
+                <div class="card-attr-row">
+                  <span>Card Type</span>
+                  <span>Auto-Rotating Token</span>
+                </div>
+                <div class="card-attr-row">
+                  <span>Balance Locked</span>
+                  <span>$50,000.00</span>
+                </div>
+                <div class="card-attr-row">
+                  <span>Auto Destroy</span>
+                  <span>Enabled after 1 use</span>
+                </div>
+                <div class="card-btn-stack">
+                  <button class="btn btn-secondary w-full" onclick="alert('Virtual token refreshed with new secure CVV.')">Generate New Burner Card</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: VAULT VIEW -->
+        <section id="view-vault" class="tab-view">
+          <div class="page-title-banner">
+            <div>
+              <h2 class="view-title">Reserve Vault & Multi-Asset Allocations</h2>
+              <p class="view-desc">Custodial assets, high-yield treasuries, and precious metals backing.</p>
+            </div>
+          </div>
+
+          <div class="vault-grid">
+            <div class="glass-panel vault-card">
+              <div class="vault-icon-circle emerald">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+              <span class="vault-label">US Treasury Direct 3-Mo</span>
+              <h3 class="vault-amount">$80,000.00</h3>
+              <p class="vault-sub">Yielding +5.20% annualized</p>
+            </div>
+
+            <div class="glass-panel vault-card">
+              <div class="vault-icon-circle gold">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="m8 12 8 0"/></svg>
+              </div>
+              <span class="vault-label">Physical Allocated Gold Bullion</span>
+              <h3 class="vault-amount">15.00 oz t</h3>
+              <p class="vault-sub">Zurich Freezone Vault Custody</p>
+            </div>
+
+            <div class="glass-panel vault-card">
+              <div class="vault-icon-circle blue">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+              </div>
+              <span class="vault-label">Available Liquid Reserve</span>
+              <h3 class="vault-amount text-emerald" id="vaultLiquidBalance">$420,000.00</h3>
+              <p class="vault-sub">Ready for immediate Fedwire</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- 1. TAB: INVESTMENTS & STOCKS                   -->
+        <!-- ============================================== -->
+        <section id="view-investments" class="tab-view">
+          <div class="page-title-banner">
+            <div>
+              <h2 class="view-title">Investments & Capital Markets</h2>
+              <p class="view-desc">Real-time equities portfolio, quantitative hedge index, and private syndications.</p>
+            </div>
+            <div class="banner-actions">
+              <span class="badge-status-green">Market Open • NYSE / NASDAQ</span>
+            </div>
+          </div>
+
+          <!-- Market Ticker Cards -->
+          <div class="market-tickers-grid">
+            <div class="ticker-card glass-panel">
+              <div class="ticker-top">
+                <span class="ticker-symbol">NVDA</span>
+                <span class="ticker-change text-emerald">+4.82%</span>
+              </div>
+              <div class="ticker-name">NVIDIA Corporation</div>
+              <div class="ticker-val">$128.40</div>
+              <div class="ticker-holding">Holdings: 1,130 shares ($145,200.00)</div>
+            </div>
+
+            <div class="ticker-card glass-panel">
+              <div class="ticker-top">
+                <span class="ticker-symbol">AAPL</span>
+                <span class="ticker-change text-emerald">+1.65%</span>
+              </div>
+              <div class="ticker-name">Apple Inc.</div>
+              <div class="ticker-val">$224.50</div>
+              <div class="ticker-holding">Holdings: 438 shares ($98,400.00)</div>
+            </div>
+
+            <div class="ticker-card glass-panel">
+              <div class="ticker-top">
+                <span class="ticker-symbol">BRK.A</span>
+                <span class="ticker-change text-emerald">+0.45%</span>
+              </div>
+              <div class="ticker-name">Berkshire Hathaway</div>
+              <div class="ticker-val">$684,200.00</div>
+              <div class="ticker-holding">Holdings: 0.10 share ($68,420.00)</div>
+            </div>
+
+            <div class="ticker-card glass-panel">
+              <div class="ticker-top">
+                <span class="ticker-symbol text-cyan">QUANTUM-AI</span>
+                <span class="ticker-change text-emerald">+19.4% YTD</span>
+              </div>
+              <div class="ticker-name">Apex Proprietary Alpha Fund</div>
+              <div class="ticker-val">$1,420.10</div>
+              <div class="ticker-holding">Holdings: 78.8 units ($112,000.00)</div>
+            </div>
+          </div>
+
+          <!-- Allocation & Interactive Trade Terminal -->
+          <div class="dashboard-split-grid" style="margin-top: 24px;">
+            <div class="glass-panel" style="padding: 28px;">
+              <div class="panel-header" style="padding: 0 0 16px;">
+                <div>
+                  <span class="section-subtitle">STRATEGIC WEIGHTING</span>
+                  <h3 class="section-title">Asset Allocation Breakdown</h3>
+                </div>
+                <span class="badge-status-green">Total AUM: $424,020.00</span>
+              </div>
+
+              <div class="allocation-bar-container" style="margin: 20px 0;">
+                <div class="alloc-bar-multi">
+                  <div class="alloc-seg seg-tech" style="width: 42%;" title="US Tech (42%)"></div>
+                  <div class="alloc-seg seg-macro" style="width: 25%;" title="Global Macro (25%)"></div>
+                  <div class="alloc-seg seg-treasury" style="width: 20%;" title="Treasuries (20%)"></div>
+                  <div class="alloc-seg seg-venture" style="width: 13%;" title="Private Venture (13%)"></div>
+                </div>
+                <div class="alloc-legend-grid">
+                  <div class="alloc-leg-item"><span class="dot-color seg-tech"></span> US Tech Equities (42%)</div>
+                  <div class="alloc-leg-item"><span class="dot-color seg-macro"></span> Global Macro ETFs (25%)</div>
+                  <div class="alloc-leg-item"><span class="dot-color seg-treasury"></span> Treasury Yield (20%)</div>
+                  <div class="alloc-leg-item"><span class="dot-color seg-venture"></span> Private Equity / VC (13%)</div>
+                </div>
+              </div>
+
+              <div class="investment-summary-stats">
+                <div class="stat-box">
+                  <span class="chart-stat-label">Unrealized Annual Gain</span>
+                  <div class="chart-stat-val text-emerald">+$68,490.20 (+19.2%)</div>
+                </div>
+                <div class="stat-box">
+                  <span class="chart-stat-label">Quarterly Dividends</span>
+                  <div class="chart-stat-val font-mono">$4,850.00</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Instant Trade Simulator -->
+            <div class="glass-panel" style="padding: 28px;">
+              <div class="panel-header" style="padding: 0 0 16px;">
+                <div>
+                  <span class="section-subtitle">INSTANT EXECUTION</span>
+                  <h3 class="section-title">Market Order Desk</h3>
+                </div>
+                <span class="tier-pill">Zero Commission</span>
+              </div>
+
+              <form id="tradeForm" style="display: flex; flex-direction: column; gap: 14px; margin-top: 16px;">
+                <div class="form-group">
+                  <label class="field-label">Select Security</label>
+                  <select id="tradeAssetSelect" class="form-control" style="background: rgba(255,255,255,0.06);">
+                    <option value="NVDA">NVDA - NVIDIA Corp ($128.40)</option>
+                    <option value="AAPL">AAPL - Apple Inc ($224.50)</option>
+                    <option value="BRK.A">BRK.A - Berkshire Hathaway ($684,200.00)</option>
+                    <option value="QUANTUM">APEX QUANTUM - Alpha AI Fund ($1,420.10)</option>
+                  </select>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label class="field-label">Order Type</label>
+                    <div style="display: flex; gap: 8px;">
+                      <button type="button" class="btn btn-primary btn-sm w-full" id="tradeBuyBtn">BUY</button>
+                      <button type="button" class="btn btn-secondary btn-sm w-full" id="tradeSellBtn">SELL</button>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="field-label">Amount (USD)</label>
+                    <input type="number" id="tradeAmountInput" class="form-control" placeholder="10,000" min="100" step="100" value="10000" required>
+                  </div>
+                </div>
+
+                <div class="trade-impact-note" style="font-size: 0.78rem; color: var(--text-dim); background: rgba(255,255,255,0.03); padding: 10px; border-radius: var(--radius-sm);">
+                  <span>Settlement: Direct liquidity from Checking Account.</span>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="executeTradeBtn" style="margin-top: 4px;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+                  <span id="tradeBtnLabel">Execute Buy Order ($10,000.00)</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- 2. TAB: CREDIT LINES & LOANS                   -->
+        <!-- ============================================== -->
+        <section id="view-loans" class="tab-view">
+          <div class="page-title-banner">
+            <div>
+              <h2 class="view-title">Lombard Credit Facility & Liquidity Lines</h2>
+              <p class="view-desc">Pledged-asset revolving credit backed by investment portfolio. Draw cash on demand.</p>
+            </div>
+            <div class="banner-actions">
+              <span class="badge-status-green">Facility Status: Pre-Approved & Active</span>
+            </div>
+          </div>
+
+          <!-- Credit Line Stats Hero -->
+          <div class="vault-grid">
+            <div class="glass-panel vault-card">
+              <div class="vault-icon-circle emerald">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+              </div>
+              <span class="vault-label">Total Revolving Facility</span>
+              <h3 class="vault-amount">$2,500,000.00</h3>
+              <p class="vault-sub">Underwritten against Apex custody assets</p>
+            </div>
+
+            <div class="glass-panel vault-card">
+              <div class="vault-icon-circle blue">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+              <span class="vault-label">Available to Drawdown Now</span>
+              <h3 class="vault-amount text-emerald" id="creditAvailableDisplay">$2,150,000.00</h3>
+              <p class="vault-sub">Instant zero-delay deposit into checking</p>
+            </div>
+
+            <div class="glass-panel vault-card">
+              <div class="vault-icon-circle gold">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+              </div>
+              <span class="vault-label">Active Borrowed Balance</span>
+              <h3 class="vault-amount font-mono" id="creditBorrowedDisplay">$350,000.00</h3>
+              <p class="vault-sub">Fixed 3.85% SOFR rate • No monthly penalty</p>
+            </div>
+          </div>
+
+          <!-- Interactive Drawdown Simulator -->
+          <div class="glass-panel" style="padding: 32px; margin-top: 24px;">
+            <div class="panel-header" style="padding: 0 0 16px;">
+              <div>
+                <span class="section-subtitle">INSTANT LIQUIDITY INJECTION</span>
+                <h3 class="section-title">Draw Cash From Lombard Facility</h3>
+              </div>
+              <span class="badge-status-green">Available: $2,150,000.00</span>
+            </div>
+
+            <div class="loan-slider-container" style="margin: 24px 0;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+                <span style="color: var(--text-muted); font-size: 0.9rem;">Select Drawdown Amount:</span>
+                <span class="font-mono text-emerald" id="drawdownAmountLabel" style="font-size: 2rem; font-weight: 800;">$50,000.00</span>
+              </div>
+
+              <input type="range" id="loanDrawdownRange" min="10000" max="500000" step="5000" value="50000" class="range-slider" style="width: 100%;">
+
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim); margin-top: 6px;">
+                <span>Min: $10,000</span>
+                <span>$100,000</span>
+                <span>$250,000</span>
+                <span>Max Single Draw: $500,000</span>
+              </div>
+            </div>
+
+            <div class="loan-breakdown-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; background: rgba(255,255,255,0.03); padding: 18px; border-radius: var(--radius-md); margin-bottom: 24px;">
+              <div>
+                <span class="chart-stat-label">Effective APR</span>
+                <strong style="color: #ffffff; font-size: 1.1rem;">3.85% (SOFR + 0.35%)</strong>
+              </div>
+              <div>
+                <span class="chart-stat-label">Estimated Monthly Interest</span>
+                <strong class="text-cyan font-mono" id="monthlyInterestLabel" style="font-size: 1.1rem;">$160.42 / mo</strong>
+              </div>
+              <div>
+                <span class="chart-stat-label">Deposit Destination</span>
+                <strong style="color: #ffffff; font-size: 1.1rem;">Checking Account (•• 9402)</strong>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 14px; justify-content: flex-end;">
+              <button class="btn btn-secondary" id="repayLoanBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+                <span>Repay $25,000 Principal</span>
+              </button>
+              <button class="btn btn-primary" id="executeLoanDrawBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+                <span id="drawdownBtnText">Deposit $50,000 into Checking Now</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- 3. TAB: BILL PAY & SCHEDULED AUTOPAY           -->
+        <!-- ============================================== -->
+        <section id="view-billpay" class="tab-view">
+          <div class="page-title-banner">
+            <div>
+              <h2 class="view-title">Bill Pay & Scheduled Autopay</h2>
+              <p class="view-desc">Automated execution for private aviation charters, property management, and syndicates.</p>
+            </div>
+            <div class="banner-actions">
+              <button class="btn btn-primary" id="addNewBillBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                <span>Add Scheduled Payee</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Bills Grid -->
+          <div class="bills-list-container glass-panel">
+            <div class="table-responsive">
+              <table class="banking-table">
+                <thead>
+                  <tr>
+                    <th>Biller / Service</th>
+                    <th>Category</th>
+                    <th>Due Date</th>
+                    <th>Frequency</th>
+                    <th>Autopay Status</th>
+                    <th class="text-right">Amount</th>
+                    <th class="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="billpayTableBody">
+                  <tr>
+                    <td>
+                      <div style="font-weight: 700; color: #fff;">Gulfstream Aerospace Charter Fleet</div>
+                      <div style="font-size: 0.72rem; color: var(--text-dim);">Flight Hours Retainer • Acc #GF-9902</div>
+                    </td>
+                    <td>Private Aviation</td>
+                    <td>Oct 1, 2026</td>
+                    <td>Monthly</td>
+                    <td><span class="badge-status-green">Autopay Active</span></td>
+                    <td class="text-right font-mono" style="font-weight: 700; color: #fff;">$12,500.00</td>
+                    <td class="text-right">
+                      <button class="btn btn-secondary btn-sm bill-pay-now-btn" data-biller="Gulfstream Aerospace" data-amount="12500">Pay Now</button>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td>
+                      <div style="font-weight: 700; color: #fff;">Fisher Island Marina & Yacht Berth</div>
+                      <div style="font-size: 0.72rem; color: var(--text-dim);">Superyacht Slip #44 • Slip Lease</div>
+                    </td>
+                    <td>Maritime Berth</td>
+                    <td>Oct 5, 2026</td>
+                    <td>Monthly</td>
+                    <td><span class="badge-status-green">Autopay Active</span></td>
+                    <td class="text-right font-mono" style="font-weight: 700; color: #fff;">$8,200.00</td>
+                    <td class="text-right">
+                      <button class="btn btn-secondary btn-sm bill-pay-now-btn" data-biller="Fisher Island Marina" data-amount="8200">Pay Now</button>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td>
+                      <div style="font-weight: 700; color: #fff;">Bel Air Estates Trust Escrow</div>
+                      <div style="font-size: 0.72rem; color: var(--text-dim);">County Tax & Residence HOA</div>
+                    </td>
+                    <td>Luxury Real Estate</td>
+                    <td>Oct 12, 2026</td>
+                    <td>Monthly</td>
+                    <td><span class="badge-status-green">Autopay Active</span></td>
+                    <td class="text-right font-mono" style="font-weight: 700; color: #fff;">$14,900.00</td>
+                    <td class="text-right">
+                      <button class="btn btn-secondary btn-sm bill-pay-now-btn" data-biller="Bel Air Estates Trust" data-amount="14900">Pay Now</button>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td>
+                      <div style="font-weight: 700; color: #fff;">Apex Alpha Syndicate Series B</div>
+                      <div style="font-size: 0.72rem; color: var(--text-dim);">Quarterly LP Capital Call #4</div>
+                    </td>
+                    <td>Venture Capital</td>
+                    <td>Oct 20, 2026</td>
+                    <td>Quarterly</td>
+                    <td><span class="tier-pill" style="font-size: 0.68rem;">Scheduled</span></td>
+                    <td class="text-right font-mono" style="font-weight: 700; color: #fff;">$25,000.00</td>
+                    <td class="text-right">
+                      <button class="btn btn-primary btn-sm bill-pay-now-btn" data-biller="Apex Alpha Syndicate" data-amount="25000">Authorize Call</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- 4. TAB: CRYPTO & DIGITAL ASSETS                -->
+        <!-- ============================================== -->
+        <section id="view-crypto" class="tab-view">
+          <div class="page-title-banner">
+            <div>
+              <h2 class="view-title">Institutional Custody & Digital Assets</h2>
+              <p class="view-desc">Regulated cold-storage vaults with MPC multi-party computation security.</p>
+            </div>
+            <div class="banner-actions">
+              <span class="badge-status-green">MPC Custody Active • Swiss Cold Storage</span>
+            </div>
+          </div>
+
+          <!-- 4 Crypto Vault Cards -->
+          <div class="market-tickers-grid">
+            <div class="ticker-card glass-panel">
+              <div class="ticker-top">
+                <span class="ticker-symbol" style="color: #F59E0B;">BITCOIN (BTC)</span>
+                <span class="ticker-change text-emerald">+2.9%</span>
+              </div>
+              <div class="ticker-name">4.2500 BTC</div>
+              <div class="ticker-val font-mono">$265,625.00</div>
+              <div class="ticker-holding">Zurich Cold Vault #CH-09</div>
+            </div>
+
+            <div class="ticker-card glass-panel">
+              <div class="ticker-top">
+                <span class="ticker-symbol" style="color: #6366F1;">ETHEREUM (ETH)</span>
+                <span class="ticker-change text-emerald">+4.1%</span>
+              </div>
+              <div class="ticker-name">35.000 ETH</div>
+              <div class="ticker-val font-mono">$91,000.00</div>
+              <div class="ticker-holding">Staked Validator Yield (3.4% APY)</div>
+            </div>
+
+            <div class="ticker-card glass-panel">
+              <div class="ticker-top">
+                <span class="ticker-symbol" style="color: #14F195;">SOLANA (SOL)</span>
+                <span class="ticker-change text-emerald">+5.4%</span>
+              </div>
+              <div class="ticker-name">280.00 SOL</div>
+              <div class="ticker-val font-mono">$42,000.00</div>
+              <div class="ticker-holding">Liquid High-Speed Node</div>
+            </div>
+
+            <div class="ticker-card glass-panel">
+              <div class="ticker-top">
+                <span class="ticker-symbol" style="color: #E6C687;">PAX GOLD (PAXG)</span>
+                <span class="ticker-change text-emerald">+0.8%</span>
+              </div>
+              <div class="ticker-name">20.00 oz t</div>
+              <div class="ticker-val font-mono">$53,200.00</div>
+              <div class="ticker-holding">London Good Delivery Backed</div>
+            </div>
+          </div>
+
+          <!-- Instant Swap to USD Widget -->
+          <div class="glass-panel" style="padding: 32px; margin-top: 24px;">
+            <div class="panel-header" style="padding: 0 0 16px;">
+              <div>
+                <span class="section-subtitle">INSTANT OTC SWAP</span>
+                <h3 class="section-title">Liquidate Crypto to USD Checking Account</h3>
+              </div>
+              <span class="badge-status-green">OTC Spread: 0.05%</span>
+            </div>
+
+            <form id="cryptoSwapForm" style="display: flex; flex-direction: column; gap: 16px; margin-top: 20px;">
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="field-label">From Digital Asset</label>
+                  <select id="swapAssetSelect" class="form-control" style="background: rgba(255,255,255,0.06);">
+                    <option value="BTC" data-rate="62500">Bitcoin (BTC) • Rate: $62,500.00</option>
+                    <option value="ETH" data-rate="2600">Ethereum (ETH) • Rate: $2,600.00</option>
+                    <option value="SOL" data-rate="150">Solana (SOL) • Rate: $150.00</option>
+                    <option value="PAXG" data-rate="2660">Pax Gold (PAXG) • Rate: $2,660.00</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="field-label">Asset Quantity to Swap</label>
+                  <input type="number" id="swapQuantityInput" class="form-control font-mono" placeholder="0.5" step="0.001" min="0.001" value="0.5" required>
+                </div>
+              </div>
+
+              <div class="transfer-preview-box">
+                <div class="preview-row">
+                  <span>Gross USD Value:</span>
+                  <span id="swapGrossUsd" class="font-mono">$31,250.00</span>
+                </div>
+                <div class="preview-row">
+                  <span>Institutional OTC Liquidity Fee:</span>
+                  <span class="text-emerald">WAIVED ($0.00)</span>
+                </div>
+                <div class="preview-row total-row">
+                  <span>Net USD Credited to Checking Account:</span>
+                  <span class="preview-new-bal font-mono" id="swapNetUsd" style="font-size: 1.2rem;">+$31,250.00</span>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" id="executeCryptoSwapBtn" style="align-self: flex-end; padding: 12px 28px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                <span>Swap to Liquid USD Now</span>
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- 5. TAB: VIP PRIVATE CONCIERGE                  -->
+        <!-- ============================================== -->
+        <section id="view-concierge" class="tab-view">
+          <div class="page-title-banner">
+            <div>
+              <h2 class="view-title">Private Banker Desk & VIP Concierge</h2>
+              <p class="view-desc">Direct 24/7 dedicated support for wire approvals, bespoke acquisitions, and vault access.</p>
+            </div>
+            <div class="banner-actions">
+              <span class="tier-pill">Dedicated Managing Director</span>
+            </div>
+          </div>
+
+          <div class="dashboard-split-grid">
+            <!-- Director Bio & Contacts -->
+            <div class="glass-panel" style="padding: 28px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 20px;">
+                  <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #e6c687, #b48c3c); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 800; color: #0b0f17; border: 2px solid rgba(255,255,255,0.3);">
+                    CS
+                  </div>
+                  <div>
+                    <h3 style="font-size: 1.2rem; font-weight: 800; color: #fff;">Charlotte Sinclair</h3>
+                    <div style="font-size: 0.8rem; color: var(--gold-accent); font-weight: 600;">Senior Managing Director • Apex Private Wealth</div>
+                    <div style="font-size: 0.72rem; color: var(--emerald-light); display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+                      <span class="live-dot"></span> On-Desk • Direct Fedline Access
+                    </div>
+                  </div>
+                </div>
+
+                <div class="security-badges-list" style="padding: 0; border: none; background: transparent; gap: 12px; margin-bottom: 20px;">
+                  <div class="security-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E6C687" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    <div>
+                      <strong style="font-size: 0.78rem;">Direct Line: +1 (800) 892-APEX (Ext 041)</strong>
+                      <p>Encrypted Satellite & Fedwire Desk</p>
+                    </div>
+                  </div>
+                  <div class="security-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <div>
+                      <strong style="font-size: 0.78rem;">Office: Zurich Paradeplatz & 432 Park Ave NYC</strong>
+                      <p>Global Freezone & Vault Access Available</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Concierge Request Actions -->
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button class="btn btn-secondary w-full" id="requestCashierCheckBtn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+                  <span>Request Certified Cashier's Check</span>
+                </button>
+                <button class="btn btn-secondary w-full" id="bookVaultVisitBtn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
+                  <span>Schedule Swiss Vault Visit</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Interactive Live Concierge Chat Widget -->
+            <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column; height: 500px;">
+              <div class="panel-header" style="padding: 0 0 14px; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span class="live-dot"></span>
+                  <span style="font-weight: 700; color: #fff;">Direct Private Concierge Channel</span>
+                </div>
+                <span class="badge-status-green">End-to-End Encrypted</span>
+              </div>
+
+              <!-- Chat Message Stream -->
+              <div id="conciergeChatStream" class="concierge-chat-stream" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 10px 0;">
+                <div class="chat-msg msg-banker">
+                  <div class="msg-author">Charlotte Sinclair • 16:48</div>
+                  <div class="msg-bubble">Good afternoon Alexander. Your <strong>$500,000.00</strong> private reserve liquidity is fully verified. How may I assist your capital allocations, real estate drawdowns, or wire executions today?</div>
+                </div>
+              </div>
+
+              <!-- Quick Prompt Pills -->
+              <div class="chat-prompt-pills" style="display: flex; gap: 6px; overflow-x: auto; padding: 8px 0; margin-top: 8px;">
+                <button type="button" class="amount-chip chat-chip" data-prompt="Request a $150,000 Certified Cashier Check">Cashier's Check</button>
+                <button type="button" class="amount-chip chat-chip" data-prompt="Increase my daily wire limit to $5,000,000">Limit Increase</button>
+                <button type="button" class="amount-chip chat-chip" data-prompt="Prepare Zurich Gold Vault visit documentation">Vault Visit</button>
+              </div>
+
+              <!-- Chat Input Box -->
+              <form id="conciergeChatForm" style="display: flex; gap: 8px; margin-top: 10px;">
+                <input type="text" id="conciergeChatInput" class="form-control" placeholder="Type a message or instruction to Charlotte..." style="flex: 1;" required>
+                <button type="submit" class="btn btn-primary" style="padding: 0 16px;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- 6. TAB: SECURITY & FINANCIAL CONTROLS          -->
+        <!-- ============================================== -->
+        <section id="view-security" class="tab-view">
+          <div class="page-title-banner">
+            <div>
+              <h2 class="view-title">Security Architecture & Financial Controls</h2>
+              <p class="view-desc">Hardware key authentication, quantum-safe encryption, and real-time fraud monitoring.</p>
+            </div>
+            <div class="banner-actions">
+              <span class="badge-status-green">Security Audit: Grade A+ (99.8%)</span>
+            </div>
+          </div>
+
+          <div class="dashboard-split-grid">
+            <!-- Left: Wire Limit Slider & 2FA Controls -->
+            <div class="glass-panel" style="padding: 28px; display: flex; flex-direction: column; gap: 24px;">
+              <div>
+                <span class="section-subtitle">TRANSACTION GOVERNANCE</span>
+                <h3 class="section-title">Daily Wire Transfer Limit</h3>
+                <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">Controls maximum single-day outbound Fedwire and SWIFT operations.</p>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: var(--radius-md);">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+                  <span style="font-size: 0.85rem; color: var(--text-muted);">Current Authorized Limit:</span>
+                  <span class="font-mono text-emerald" id="dailyLimitValLabel" style="font-size: 1.8rem; font-weight: 800;">$1,000,000.00</span>
+                </div>
+                <input type="range" id="dailyLimitRangeInput" min="100000" max="5000000" step="100000" value="1000000" class="range-slider" style="width: 100%;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-top: 6px;">
+                  <span>$100,000</span>
+                  <span>$1,000,000</span>
+                  <span>$2,500,000</span>
+                  <span>Max: $5,000,000</span>
+                </div>
+                <button class="btn btn-secondary btn-sm" id="saveDailyLimitBtn" style="margin-top: 14px;">Save Limit Preference</button>
+              </div>
+
+              <!-- Authentication & Hardware Keys -->
+              <div>
+                <span class="section-subtitle">BIOMETRIC & CRYPTOGRAPHIC ACCESS</span>
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+                  <div class="card-attr-row">
+                    <span>YubiKey 5Ci Hardware Token</span>
+                    <span class="text-emerald">Linked (Key #YK-90214)</span>
+                  </div>
+                  <div class="card-attr-row">
+                    <span>Biometric FaceID / TouchID</span>
+                    <span class="text-emerald">Enabled</span>
+                  </div>
+                  <div class="card-attr-row">
+                    <span>SMS 2FA Fallback</span>
+                    <span class="text-rose">Disabled (SIM-Swap Protected)</span>
+                  </div>
+                  <div class="card-attr-row">
+                    <span>Quantum-Resilient Encryption</span>
+                    <span class="text-cyan">Kyber-1024 Active</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Active Authorized Sessions & Emergency Lockdown -->
+            <div class="glass-panel" style="padding: 28px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div class="panel-header" style="padding: 0 0 16px;">
+                  <div>
+                    <span class="section-subtitle">AUDITED LOCATIONS</span>
+                    <h3 class="section-title">Active Authorized Sessions</h3>
+                  </div>
+                  <span class="live-dot"></span>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 16px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 12px 16px; border-radius: var(--radius-md);">
+                    <div>
+                      <strong style="color: #fff; font-size: 0.88rem;">New York, NY (Primary Terminal)</strong>
+                      <div style="font-size: 0.72rem; color: var(--text-dim);">Chrome macOS • IP: 198.51.100.44</div>
+                    </div>
+                    <span class="badge-status-green">Current Session</span>
+                  </div>
+
+                  <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 12px 16px; border-radius: var(--radius-md);">
+                    <div>
+                      <strong style="color: #fff; font-size: 0.88rem;">San Francisco, CA (Mobile Key)</strong>
+                      <div style="font-size: 0.72rem; color: var(--text-dim);">iPhone 16 Pro • Apex Secure Enclave</div>
+                    </div>
+                    <span style="font-size: 0.72rem; color: var(--text-dim);">Active 18m ago</span>
+                  </div>
+
+                  <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 12px 16px; border-radius: var(--radius-md);">
+                    <div>
+                      <strong style="color: #fff; font-size: 0.88rem;">Zurich, Switzerland (Vault Terminal)</strong>
+                      <div style="font-size: 0.72rem; color: var(--text-dim);">Paradeplatz Direct Node • HSM Token</div>
+                    </div>
+                    <span style="font-size: 0.72rem; color: var(--text-dim);">Sep 23, 2026</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Emergency Lockdown Master Switch -->
+              <div style="border-top: 1px solid var(--border-subtle); padding-top: 20px; margin-top: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong style="color: var(--rose-accent); font-size: 0.95rem;">Emergency Account Lockdown</strong>
+                    <p style="font-size: 0.75rem; color: var(--text-dim);">Freezes cards, pauses wire outbound, and terminates all active sessions immediately.</p>
+                  </div>
+                  <button class="btn btn-secondary" id="emergencyLockdownBtn" style="border-color: rgba(244,63,94,0.4); color: #F43F5E;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <span>Initiate Lockdown</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: SEND MONEY / WIRE TRANSFER MODAL         -->
+  <!-- ============================================== -->
+  <div class="modal-overlay" id="transferModalOverlay">
+    <div class="modal-card modal-send">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <div class="modal-pill">
+            <span class="pulse-indicator"></span>
+            <span>Fedwire Real-Time Gross Settlement</span>
+          </div>
+          <h2 class="modal-title">Initiate Money Transfer</h2>
+          <p class="modal-desc">Send funds instantly with zero transfer fees for Apex Reserve accounts.</p>
+        </div>
+        <button class="modal-close-btn" id="closeSendModalBtn" title="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form id="transferForm" class="modal-body">
+        
+        <!-- Source Account Box -->
+        <div class="transfer-source-box">
+          <div class="source-info">
+            <span class="field-label">Transferring From</span>
+            <div class="source-acc-name">Apex Primary Private Reserve (•• 9402)</div>
+          </div>
+          <div class="source-balance-badge">
+            <span>Available Balance:</span>
+            <strong id="modalAvailableBalance">$500,000.00</strong>
+          </div>
+        </div>
+
+        <!-- Quick Select Beneficiary -->
+        <div class="form-group">
+          <label class="field-label">Select Frequent Beneficiary or Enter New Details</label>
+          <div class="quick-recipients-chips" id="modalRecipientChips">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- Recipient Information Grid -->
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="field-label" for="recipientNameInput">Recipient Full Name / Organization *</label>
+            <input type="text" id="recipientNameInput" class="form-control" placeholder="e.g. Elena Rostova or Tesla Inc." required>
+          </div>
+
+          <div class="form-group">
+            <label class="field-label" for="recipientBankInput">Receiving Bank *</label>
+            <input type="text" id="recipientBankInput" class="form-control" placeholder="e.g. JPMorgan Chase, Goldman Sachs" required>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="field-label" for="recipientAccountInput">Account Number / IBAN *</label>
+            <input type="text" id="recipientAccountInput" class="form-control font-mono" placeholder="e.g. 984021849204" required>
+          </div>
+
+          <div class="form-group">
+            <label class="field-label" for="recipientRoutingInput">Routing Number (ABA) / SWIFT</label>
+            <input type="text" id="recipientRoutingInput" class="form-control font-mono" placeholder="e.g. 021000021" value="021000021">
+          </div>
+        </div>
+
+        <!-- Transfer Method Selector -->
+        <div class="form-group">
+          <label class="field-label">Settlement Rail</label>
+          <div class="rail-selector-grid">
+            <label class="rail-option active">
+              <input type="radio" name="transferRail" value="Fedwire Instant" checked>
+              <div class="rail-box">
+                <span class="rail-title">Fedwire Instant</span>
+                <span class="rail-speed">Immediate (0-5 sec)</span>
+                <span class="rail-fee text-emerald">Fee: $0.00</span>
+              </div>
+            </label>
+            <label class="rail-option">
+              <input type="radio" name="transferRail" value="FedNow Realtime">
+              <div class="rail-box">
+                <span class="rail-title">FedNow Service</span>
+                <span class="rail-speed">Real-time Gross</span>
+                <span class="rail-fee text-emerald">Fee: $0.00</span>
+              </div>
+            </label>
+            <label class="rail-option">
+              <input type="radio" name="transferRail" value="SWIFT Global">
+              <div class="rail-box">
+                <span class="rail-title">SWIFT Global Priority</span>
+                <span class="rail-speed">Worldwide Clearing</span>
+                <span class="rail-fee text-emerald">Fee: $0.00</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Transfer Amount Section -->
+        <div class="form-group amount-group">
+          <div class="amount-label-row">
+            <label class="field-label" for="transferAmountInput">Transfer Amount (USD) *</label>
+            <span class="amount-helper" id="amountErrorMsg"></span>
+          </div>
+          <div class="amount-input-wrapper">
+            <span class="currency-symbol">$</span>
+            <input type="number" id="transferAmountInput" class="amount-input" placeholder="0.00" step="0.01" min="1" max="500000" required>
+          </div>
+
+          <!-- Quick preset buttons -->
+          <div class="amount-chips-row">
+            <button type="button" class="amount-chip" data-add="1000">+$1,000</button>
+            <button type="button" class="amount-chip" data-add="5000">+$5,000</button>
+            <button type="button" class="amount-chip" data-add="25000">+$25,000</button>
+            <button type="button" class="amount-chip" data-add="100000">+$100,000</button>
+            <button type="button" class="amount-chip chip-max" id="maxAmountBtn">Send Full Balance</button>
+          </div>
+        </div>
+
+        <!-- Reference / Memo -->
+        <div class="form-group">
+          <label class="field-label" for="transferMemoInput">Wire Memo / Purpose (Optional)</label>
+          <input type="text" id="transferMemoInput" class="form-control" placeholder="e.g. Asset Acquisition, Investment Fund Drawdown, Consulting">
+        </div>
+
+        <!-- Transfer Summary Preview Box -->
+        <div class="transfer-preview-box">
+          <div class="preview-row">
+            <span>Transfer Amount:</span>
+            <span id="previewTransferAmount">$0.00</span>
+          </div>
+          <div class="preview-row">
+            <span>Settlement Processing Fee:</span>
+            <span class="text-emerald">FREE (Apex Reserve)</span>
+          </div>
+          <div class="preview-row total-row">
+            <span>New Balance After Transfer:</span>
+            <span class="preview-new-bal" id="previewRemainingBalance">$500,000.00</span>
+          </div>
+        </div>
+
+        <!-- Submit Button with Biometric / Security Feel -->
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-ghost" id="cancelSendBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-submit-transfer" id="submitTransferBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+            <span id="submitBtnText">Authorize & Execute Transfer</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: TRANSFER COMPLETE (SUCCESS CELEBRATION) -->
+  <!-- ============================================== -->
+  <div class="modal-overlay" id="transferCompleteModalOverlay">
+    <div class="modal-card modal-success">
+      <div class="success-banner">
+        
+        <!-- Big Animated Checkmark Icon -->
+        <div class="success-icon-wrapper">
+          <div class="success-pulse-ring"></div>
+          <div class="success-icon-circle">
+            <svg class="checkmark-svg" viewBox="0 0 52 52">
+              <circle class="checkmark-circle" cx="26" cy="26" r="24" fill="none"/>
+              <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="success-titles">
+          <div class="status-chip-complete">
+            <span class="chip-dot"></span>
+            <span>SETTLEMENT CONFIRMED</span>
+          </div>
+          <h2 class="success-heading">Transfer Complete</h2>
+          <p class="success-subheading">Your funds have been successfully wired and cleared via Fedwire.</p>
+        </div>
+
+        <div class="success-amount-display" id="completeAmountDisplay">
+          -$50,000.00
+        </div>
+      </div>
+
+      <!-- Receipt Card Component -->
+      <div class="receipt-container" id="printableReceipt">
+        <div class="receipt-card">
+          <div class="receipt-brand-row">
+            <div class="receipt-logo">
+              <span class="receipt-bank-title">APEX RESERVE BANK</span>
+              <span class="receipt-bank-sub">FEDERAL RESERVE RTGS PARTICIPANT</span>
+            </div>
+            <div class="receipt-status-badge">
+              PAID & CLEARED
+            </div>
+          </div>
+
+          <div class="receipt-divider"></div>
+
+          <div class="receipt-data-grid">
+            <div class="receipt-field">
+              <span class="r-label">Transfer Reference ID</span>
+              <span class="r-val font-mono" id="receiptTxId">TX-8942-FED-9941</span>
+            </div>
+            <div class="receipt-field">
+              <span class="r-label">Execution Timestamp</span>
+              <span class="r-val" id="receiptTimestamp">Sep 24, 2026 • 16:49:12 EST</span>
+            </div>
+            <div class="receipt-field">
+              <span class="r-label">Beneficiary</span>
+              <span class="r-val" id="receiptRecipient">Elena Rostova</span>
+            </div>
+            <div class="receipt-field">
+              <span class="r-label">Beneficiary Bank</span>
+              <span class="r-val" id="receiptBank">JPMorgan Chase Private</span>
+            </div>
+            <div class="receipt-field">
+              <span class="r-label">Account / IBAN</span>
+              <span class="r-val font-mono" id="receiptAccount">•••• 4920</span>
+            </div>
+            <div class="receipt-field">
+              <span class="r-label">Settlement Rail</span>
+              <span class="r-val" id="receiptRail">Fedwire Instant</span>
+            </div>
+            <div class="receipt-field">
+              <span class="r-label">Memo / Description</span>
+              <span class="r-val" id="receiptMemo">Asset Acquisition</span>
+            </div>
+            <div class="receipt-field">
+              <span class="r-label">Network Transfer Fee</span>
+              <span class="r-val text-emerald">$0.00 (Waived)</span>
+            </div>
+          </div>
+
+          <div class="receipt-divider"></div>
+
+          <div class="receipt-footer-row">
+            <div>
+              <span class="r-label">Remaining Liquid Balance:</span>
+              <strong class="r-balance text-emerald" id="receiptRemainingBalance">$450,000.00</strong>
+            </div>
+            <div class="security-seal">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>Cryptographically Signed</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="success-actions">
+        <button class="btn btn-secondary" id="printReceiptBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+          <span>Print / Save Receipt</span>
+        </button>
+        <button class="btn btn-secondary" id="sendAnotherTransferBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+          <span>Send Another Transfer</span>
+        </button>
+        <button class="btn btn-primary" id="returnDashboardBtn">
+          <span>Return to Dashboard</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: DEPOSIT FUNDS MODAL                     -->
+  <!-- ============================================== -->
+  <div class="modal-overlay" id="depositModalOverlay">
+    <div class="modal-card modal-deposit">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <div class="modal-pill">
+            <span class="pulse-indicator"></span>
+            <span>Inbound Liquidity Inflow</span>
+          </div>
+          <h2 class="modal-title">Deposit / Wire Inflow</h2>
+          <p class="modal-desc">Simulate receiving funds into your Apex Reserve account.</p>
+        </div>
+        <button class="modal-close-btn" id="closeDepositModalBtn" title="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form id="depositForm" class="modal-body">
+        <div class="form-group">
+          <label class="field-label" for="depositSenderInput">Originating Institution / Sender</label>
+          <input type="text" id="depositSenderInput" class="form-control" placeholder="e.g. Morgan Stanley Wealth Management" value="Morgan Stanley Institutional" required>
+        </div>
+
+        <div class="form-group amount-group">
+          <label class="field-label" for="depositAmountInput">Deposit Amount (USD) *</label>
+          <div class="amount-input-wrapper">
+            <span class="currency-symbol">$</span>
+            <input type="number" id="depositAmountInput" class="amount-input" placeholder="0.00" step="0.01" min="100" required>
+          </div>
+          <div class="amount-chips-row">
+            <button type="button" class="amount-chip deposit-chip" data-dep="10000">+$10,000</button>
+            <button type="button" class="amount-chip deposit-chip" data-dep="50000">+$50,000</button>
+            <button type="button" class="amount-chip deposit-chip" data-dep="100000">+$100,000</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label" for="depositNoteInput">Remittance Note</label>
+          <input type="text" id="depositNoteInput" class="form-control" placeholder="e.g. Dividend Distribution Q3, Wire Deposit" value="Quarterly Venture Dividend">
+        </div>
+
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-ghost" id="cancelDepositBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="m5 12 7-7 7 7"/></svg>
+            <span>Confirm Wire Inflow</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: REQUEST WIRE INFLOW MODAL               -->
+  <!-- ============================================== -->
+  <div class="modal-overlay" id="requestFundsModalOverlay">
+    <div class="modal-card modal-deposit">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <div class="modal-pill">
+            <span class="pulse-indicator"></span>
+            <span>Fedwire Payment Request & Remittance Link</span>
+          </div>
+          <h2 class="modal-title">Request Wire Inflow</h2>
+          <p class="modal-desc">Generate official Fedwire remittance instructions for an incoming payer.</p>
+        </div>
+        <button class="modal-close-btn" id="closeRequestModalBtn" title="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form id="requestFundsForm" class="modal-body">
+        <div class="form-group">
+          <label class="field-label" for="requestPayerInput">Payer Organization / Client Name *</label>
+          <input type="text" id="requestPayerInput" class="form-control" placeholder="e.g. Goldman Sachs Custody or Escrow Trust" required>
+        </div>
+
+        <div class="form-group amount-group">
+          <label class="field-label" for="requestAmountInput">Requested Wire Amount (USD) *</label>
+          <div class="amount-input-wrapper">
+            <span class="currency-symbol">$</span>
+            <input type="number" id="requestAmountInput" class="amount-input" placeholder="0.00" step="0.01" min="100" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label" for="requestMemoInput">Purpose / Remittance Reference</label>
+          <input type="text" id="requestMemoInput" class="form-control" placeholder="e.g. Advisory Fee, Asset Acquisition Tranche 2">
+        </div>
+
+        <div class="transfer-preview-box">
+          <div class="preview-row">
+            <span>Receiving Account:</span>
+            <span class="font-mono">Apex Reserve (•• 9402)</span>
+          </div>
+          <div class="preview-row">
+            <span>Routing ABA:</span>
+            <span class="font-mono text-emerald">021000089</span>
+          </div>
+          <div class="preview-row">
+            <span>SWIFT BIC:</span>
+            <span class="font-mono text-cyan">APEXUS33NYC</span>
+          </div>
+        </div>
+
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-ghost" id="cancelRequestBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Generate & Copy Wire Remittance</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notification Toast Container -->
+  <div class="toast-stack" id="toastStack"></div>
+
+  <!-- JavaScript Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
