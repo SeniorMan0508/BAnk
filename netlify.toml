@@ -1,0 +1,3 @@
+[build]
+  # Tell Netlify to immediately cancel automated builds to preserve build minutes
+  ignore = "exit 0"
