@@ -544,7 +544,12 @@
     const DEFAULT_CLOUD_BACKEND_URL = 'https://bank-m0ot.onrender.com';
 
     function getBackendUrl(path) {
-      // 1. Check if a live cloud backend URL is configured (e.g. Render / Tunnel)
+      // 1. If currently hosted directly on Render or local node server, use relative path:
+      if (window.location.hostname && (window.location.hostname.includes('onrender.com') || window.location.port === '8080' || window.location.port === '10000')) {
+        return path;
+      }
+
+      // 2. Check if a live cloud backend URL is configured (e.g. Render / Tunnel)
       const cloudBackend = localStorage.getItem('APEX_CLOUD_BACKEND_URL') ||
         (window.APEX_CONFIG && window.APEX_CONFIG.backendUrl) ||
         DEFAULT_CLOUD_BACKEND_URL;
@@ -553,15 +558,11 @@
       }
 
       if (window.location.protocol.startsWith('http')) {
-        if (window.location.port === '8080') return path;
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
           return `${window.location.protocol}//${window.location.hostname}:8080${path}`;
         }
-        if (window.location.protocol === 'https:') {
-          return null;
-        }
       }
-      return 'http://localhost:8080' + path;
+      return DEFAULT_CLOUD_BACKEND_URL + path;
     }
 
     // Seed accounts fallback for both HTTP and file:/// execution

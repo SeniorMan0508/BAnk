@@ -222,10 +222,10 @@
       try {
         const cloudBackend = localStorage.getItem('APEX_CLOUD_BACKEND_URL') || 'https://bank-m0ot.onrender.com';
         let endpoint = null;
-        if (cloudBackend && cloudBackend.startsWith('http')) {
-          endpoint = cloudBackend.replace(/\/+$/, '') + `/api/user?id=${encodeURIComponent(currentUser.id)}`;
-        } else if (window.location.protocol.startsWith('http') && window.location.port === '8080') {
+        if (window.location.hostname && (window.location.hostname.includes('onrender.com') || window.location.port === '8080' || window.location.port === '10000')) {
           endpoint = `/api/user?id=${encodeURIComponent(currentUser.id)}`;
+        } else if (cloudBackend && cloudBackend.startsWith('http')) {
+          endpoint = cloudBackend.replace(/\/+$/, '') + `/api/user?id=${encodeURIComponent(currentUser.id)}`;
         } else if (window.location.hostname === 'localhost') {
           endpoint = `http://localhost:8080/api/user?id=${encodeURIComponent(currentUser.id)}`;
         }
