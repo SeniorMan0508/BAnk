@@ -1528,7 +1528,7 @@
         }
       }
 
-      var savedCloud = localStorage.getItem('APEX_CLOUD_BACKEND_URL') || '';
+      var savedCloud = localStorage.getItem('APEX_CLOUD_BACKEND_URL') || 'https://bank-m0ot.onrender.com';
       if (cloudUrlInput && savedCloud) cloudUrlInput.value = savedCloud;
       if (savedCloud) {
         fetch(savedCloud.replace(/\/+$/, '') + '/api/users')

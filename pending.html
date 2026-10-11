@@ -220,7 +220,7 @@
 
       // 2. Check server API if reachable
       try {
-        const cloudBackend = localStorage.getItem('APEX_CLOUD_BACKEND_URL');
+        const cloudBackend = localStorage.getItem('APEX_CLOUD_BACKEND_URL') || 'https://bank-m0ot.onrender.com';
         let endpoint = null;
         if (cloudBackend && cloudBackend.startsWith('http')) {
           endpoint = cloudBackend.replace(/\/+$/, '') + `/api/user?id=${encodeURIComponent(currentUser.id)}`;

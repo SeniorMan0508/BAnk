@@ -10,10 +10,13 @@
 
   const STORAGE_KEY = 'APEX_RESERVE_STATE_V2';
 
+  const DEFAULT_CLOUD_BACKEND_URL = 'https://bank-m0ot.onrender.com';
+
   function getBackendUrl(path) {
     // 1. Check if a live cloud backend URL is configured (e.g. Render / Tunnel)
     const cloudBackend = localStorage.getItem('APEX_CLOUD_BACKEND_URL') ||
-      (window.APEX_CONFIG && window.APEX_CONFIG.backendUrl);
+      (window.APEX_CONFIG && window.APEX_CONFIG.backendUrl) ||
+      DEFAULT_CLOUD_BACKEND_URL;
     if (cloudBackend && typeof cloudBackend === 'string' && cloudBackend.startsWith('http')) {
       return cloudBackend.replace(/\/+$/, '') + path;
     }
