@@ -681,7 +681,28 @@
         }
       })
       .catch(err => {
-        console.warn('Could not sync accounts from server:', err);
+        // Fallback for GitHub Pages, Netlify, and mobile static hosting:
+        fetch('database.json?v=' + Date.now())
+          .then(r => r.json())
+          .then(data => {
+            if (data && Array.isArray(data.users) && data.users.length > 0) {
+              accounts = data.users.filter(u => u.status !== 'rejected');
+              applyPermanentCredentials(accounts);
+              applyPermanentBalances(accounts);
+              saveAccounts();
+              const active = accounts.find(a => a.id === currentUserId);
+              if (active) {
+                localStorage.setItem('APEX_LOGGED_IN_USER', JSON.stringify(active));
+              }
+              syncStateFromCurrentUser();
+              updateUI();
+              if (window.location.pathname.includes('admin')) {
+                renderAdminDashboard();
+                updateBadges();
+              }
+            }
+          })
+          .catch(() => {});
       });
 
     // Also fetch permanent credentials vault for guaranteed consistency
@@ -708,7 +729,32 @@
           }
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        fetch('credentials_vault.json?v=' + Date.now())
+          .then(r => r.json())
+          .then(vaultData => {
+            if (vaultData && vaultData.credentials) {
+              const local = getPermanentCredentials();
+              let updated = false;
+              for (const key of Object.keys(vaultData.credentials)) {
+                const entry = vaultData.credentials[key];
+                if (entry && entry.password) {
+                  if (!local[key] || local[key].password !== entry.password) {
+                    local[key] = entry;
+                    updated = true;
+                  }
+                }
+              }
+              if (updated) {
+                localStorage.setItem(PERMANENT_CREDENTIALS_KEY, JSON.stringify(local));
+                localStorage.setItem(BACKUP_CREDENTIALS_KEY, JSON.stringify(local));
+                applyPermanentCredentials(accounts);
+                saveAccounts();
+              }
+            }
+          })
+          .catch(() => {});
+      });
   }
 
   function seedDefaultAccounts() {
@@ -718,7 +764,7 @@
       {
         id: 'usr_chris_registered',
         username: 'chris',
-        password: 'password123',
+        password: 'Yungrapper98@',
         name: 'Chis Mane',
         email: 'manechris20@gmail.com',
         phone: '+2347049045720',
@@ -732,8 +778,8 @@
         fullAccountNumber: '89204104301',
         routing: '021000089',
         tier: 'Private Client Reserve',
-        totalBalance: 100000.00,
-        checkingBalance: 100000.00,
+        totalBalance: 110000.00,
+        checkingBalance: 110000.00,
         savingsBalance: 0.00,
         cardNumber: '4920 4819 2841 9021',
         cardExp: '09/29',
