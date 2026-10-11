@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: apex-reserve-bank-api
+    env: node
+    plan: free
+    buildCommand: ""
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production

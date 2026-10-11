@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Apex Reserve | Account Verification Pending</title>
-  <meta name="description" content="Your Apex Reserve account application is currently pending verification by the Executive Compliance Administration.">
+  <meta name="description" content="Your Apex Reserve account application is currently pending verification by the Bank Executive Compliance.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -53,7 +53,7 @@
         </span>
         <h1 class="pending-title">Account Application In Review</h1>
         <p class="pending-subtitle">
-          Waiting for your information to be verified by the Admin. Once the Admin accepts your application in the Admin Dashboard, your account will open with your personal details and an initial balance of <strong>$0.00</strong>.
+          Waiting for your information to be verified by the Bank. Once the Bank authorizes your application, your account will open with your personal details and an initial balance of <strong>$0.00</strong>.
         </p>
       </div>
 
@@ -113,8 +113,8 @@
         <div class="timeline-step">
           <div class="timeline-dot current">⏳</div>
           <div class="timeline-step-text">
-            <div class="timeline-step-title" style="color: #F59E0B;">3. Admin Acceptance & Authorization</div>
-            <div class="timeline-step-desc">Waiting for Admin to click "Accept" in Admin Dashboard</div>
+            <div class="timeline-step-title" style="color: #F59E0B;">3. Waiting for Bank Authorization</div>
+            <div class="timeline-step-desc">Application In Review</div>
           </div>
         </div>
 
@@ -185,38 +185,85 @@
       document.getElementById('pendingAppRef').textContent = `APX-APP-${(currentUser.fullAccountNumber || '89204').slice(-5)}`;
     }
 
-    // Function to verify if admin has approved
+    // Function to verify if bank has approved
+    let isRedirecting = false;
+    function transitionToApproved(userObj) {
+      if (isRedirecting) return;
+      isRedirecting = true;
+      localStorage.setItem('APEX_LOGGED_IN_USER', JSON.stringify(userObj));
+      localStorage.setItem('APEX_RESERVE_ACTIVE_USER_ID_V2', userObj.id);
+      localStorage.setItem('APEX_RESERVE_ACTIVE_USER_V2', userObj.id);
+
+      const balFormatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(userObj.totalBalance || 0);
+      showToast(`Congratulations ${userObj.name}! Your account has been ACCEPTED by the Bank. Starting balance: ${balFormatted}`, 'success', 5000);
+
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1200);
+    }
+
     async function checkApproval() {
-      if (!currentUser) return;
+      if (!currentUser) return false;
+
+      // 1. Check local storage accounts first (instant responsiveness)
       try {
-        const response = await fetch(`/api/user?id=${currentUser.id}`);
-        if (response.ok) {
-          const data = await response.json();
-          const userInDb = data.user;
-
-          if (userInDb && userInDb.status === 'approved') {
-            // Updated to approved!
-            localStorage.setItem('APEX_LOGGED_IN_USER', JSON.stringify(userInDb));
-            localStorage.setItem('APEX_RESERVE_ACTIVE_USER_ID_V2', userInDb.id);
-            localStorage.setItem('APEX_RESERVE_ACTIVE_USER_V2', userInDb.id);
-
-            const balFormatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(userInDb.totalBalance || 0);
-            showToast(`Congratulations ${userInDb.name}! Your account has been ACCEPTED by the Admin. Starting balance: ${balFormatted}`, 'success', 5000);
-
-            setTimeout(() => {
-              window.location.href = 'index.html';
-            }, 1200);
+        const localRaw = localStorage.getItem('APEX_RESERVE_ACCOUNTS_V2');
+        if (localRaw) {
+          const accs = JSON.parse(localRaw);
+          const found = accs.find(a => a.id === currentUser.id || (a.username && currentUser.username && a.username.toLowerCase() === currentUser.username.toLowerCase()));
+          if (found && found.status === 'approved') {
+            transitionToApproved(found);
             return true;
           }
         }
-      } catch (e) {}
+      } catch (eLocal) {}
+
+      // 2. Check server API if reachable
+      try {
+        const cloudBackend = localStorage.getItem('APEX_CLOUD_BACKEND_URL');
+        let endpoint = null;
+        if (cloudBackend && cloudBackend.startsWith('http')) {
+          endpoint = cloudBackend.replace(/\/+$/, '') + `/api/user?id=${encodeURIComponent(currentUser.id)}`;
+        } else if (window.location.protocol.startsWith('http') && window.location.port === '8080') {
+          endpoint = `/api/user?id=${encodeURIComponent(currentUser.id)}`;
+        } else if (window.location.hostname === 'localhost') {
+          endpoint = `http://localhost:8080/api/user?id=${encodeURIComponent(currentUser.id)}`;
+        }
+
+        if (endpoint) {
+          const response = await fetch(endpoint);
+        if (response.ok) {
+          const data = await response.json();
+          const userInDb = data.user;
+          if (userInDb && userInDb.status === 'approved') {
+            transitionToApproved(userInDb);
+            return true;
+          }
+        }
+      } catch (eApi) {}
+
+      // 3. Fallback to repository database.json
+      try {
+        const res = await fetch('database.json?v=' + Date.now());
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.users)) {
+            const userInDb = data.users.find(u => u.id === currentUser.id || (u.username && currentUser.username && u.username.toLowerCase() === currentUser.username.toLowerCase()));
+            if (userInDb && userInDb.status === 'approved') {
+              transitionToApproved(userInDb);
+              return true;
+            }
+          }
+        }
+      } catch (eDb) {}
+
       return false;
     }
 
     document.getElementById('btnCheckStatus').addEventListener('click', async () => {
       const approved = await checkApproval();
       if (!approved) {
-        showToast('Your application is still Pending verification by the Admin.', 'info', 3000);
+        showToast('Your application is still Pending verification by the Bank.', 'info', 3000);
       }
     });
 

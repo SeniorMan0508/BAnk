@@ -10,10 +10,23 @@
 
   const STORAGE_KEY = 'APEX_RESERVE_STATE_V2';
 
-  // Cross-origin & Localhost backend resolution helper
   function getBackendUrl(path) {
-    if (window.location.port === '8080') {
-      return path;
+    // 1. Check if a live cloud backend URL is configured (e.g. Render / Tunnel)
+    const cloudBackend = localStorage.getItem('APEX_CLOUD_BACKEND_URL') ||
+      (window.APEX_CONFIG && window.APEX_CONFIG.backendUrl);
+    if (cloudBackend && typeof cloudBackend === 'string' && cloudBackend.startsWith('http')) {
+      return cloudBackend.replace(/\/+$/, '') + path;
+    }
+
+    if (window.location.protocol.startsWith('http')) {
+      if (window.location.port === '8080') return path;
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return `${window.location.protocol}//${window.location.hostname}:8080${path}`;
+      }
+      // On static HTTPS cloud hosts (Netlify, GitHub Pages, Vercel), do not attempt insecure http://localhost:8080
+      if (window.location.protocol === 'https:') {
+        return null;
+      }
     }
     return 'http://localhost:8080' + path;
   }
@@ -52,7 +65,7 @@
             }
             if (typeof AudioEngine !== 'undefined' && AudioEngine.playError) AudioEngine.playError();
             if (typeof showToast === 'function') {
-              showToast('Security Alert: Admin dashboard locked due to 5 minutes of inactivity.', 'error', 7000);
+              showToast('Security Alert: Bank dashboard locked due to 5 minutes of inactivity.', 'error', 7000);
             }
           }
         } else {
@@ -336,6 +349,54 @@
   const BACKUP_CREDENTIALS_KEY = 'APEX_PASSWORD_VAULT_BACKUP';
   const PERMANENT_BALANCES_KEY = 'APEX_PERMANENT_BALANCES_V2';
   const BACKUP_BALANCES_KEY = 'APEX_BALANCE_VAULT_BACKUP_V2';
+  const DELETED_USERS_STORAGE_KEY = 'APEX_DELETED_USER_IDS';
+
+  function getDeletedUserIds() {
+    try {
+      const raw = localStorage.getItem(DELETED_USERS_STORAGE_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) return new Set(arr.map(x => String(x).toLowerCase().trim()));
+      }
+    } catch (e) {}
+    return new Set();
+  }
+
+  function markUserAsDeleted(userOrId) {
+    if (!userOrId) return;
+    try {
+      const current = Array.from(getDeletedUserIds());
+      const toAdd = [];
+      if (typeof userOrId === 'string') {
+        const s = userOrId.toLowerCase().trim();
+        if (s) toAdd.push(s);
+      } else if (userOrId && typeof userOrId === 'object') {
+        if (userOrId.id) toAdd.push(String(userOrId.id).toLowerCase().trim());
+        if (userOrId.username) toAdd.push(String(userOrId.username).toLowerCase().trim());
+        if (userOrId.email) toAdd.push(String(userOrId.email).toLowerCase().trim());
+        if (userOrId.accountNumber) toAdd.push(String(userOrId.accountNumber).toLowerCase().trim());
+      }
+      toAdd.forEach(id => {
+        if (!current.includes(id)) current.push(id);
+      });
+      localStorage.setItem(DELETED_USERS_STORAGE_KEY, JSON.stringify(current));
+
+      // Also clean up from credentials vault and balances vault
+      try {
+        const creds = getPermanentCredentials();
+        toAdd.forEach(k => delete creds[k]);
+        localStorage.setItem(PERMANENT_CREDENTIALS_KEY, JSON.stringify(creds));
+        localStorage.setItem(BACKUP_CREDENTIALS_KEY, JSON.stringify(creds));
+      } catch (eC) {}
+
+      try {
+        const bals = getPermanentBalances();
+        toAdd.forEach(k => delete bals[k]);
+        localStorage.setItem(PERMANENT_BALANCES_KEY, JSON.stringify(bals));
+        localStorage.setItem(BACKUP_BALANCES_KEY, JSON.stringify(bals));
+      } catch (eB) {}
+    } catch (e) {}
+  }
 
   // =========================================================================
   // IMMUTABLE CREDENTIALS VAULT (PERSISTENT PASSWORDS ENGINE)
@@ -530,7 +591,7 @@
   };
 
   let accounts = [];
-  let currentUserId = 'usr_demo_alexander';
+  let currentUserId = null;
   let adminFilter = 'all'; // 'all' | 'pending' | 'approved'
   let adminSearchQuery = '';
 
@@ -547,6 +608,22 @@
       let sessionUser = null;
       if (sessionRaw) {
         try { sessionUser = JSON.parse(sessionRaw); } catch (e) {}
+      }
+
+      const deletedSet = getDeletedUserIds();
+
+      // If active session belongs to a deleted user, purge immediately per Project Rule #2
+      if (sessionUser && (
+        deletedSet.has(String(sessionUser.id).toLowerCase()) ||
+        (sessionUser.username && deletedSet.has(sessionUser.username.toLowerCase())) ||
+        (sessionUser.email && deletedSet.has(sessionUser.email.toLowerCase()))
+      )) {
+        localStorage.removeItem('APEX_LOGGED_IN_USER');
+        sessionUser = null;
+        if (isIndexPage || isPendingPage) {
+          window.location.href = 'login.html';
+          return;
+        }
       }
 
       // If on index.html without session, redirect to login page immediately
@@ -570,6 +647,15 @@
       } else {
         seedDefaultAccounts();
       }
+
+      // Exclude any deleted or rejected accounts from memory and persistence
+      accounts = (accounts || []).filter(u => {
+        if (!u) return false;
+        if (deletedSet.has(String(u.id).toLowerCase())) return false;
+        if (u.username && deletedSet.has(u.username.toLowerCase())) return false;
+        if (u.email && deletedSet.has(u.email.toLowerCase())) return false;
+        return true;
+      });
 
       // Enforce permanent credentials and permanent balances so seed defaults never overwrite them
       applyPermanentCredentials(accounts);
@@ -621,12 +707,7 @@
           accounts.push(sessionUser);
         }
       } else {
-        const storedUser = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
-        if (storedUser && accounts.some(a => a.id === storedUser)) {
-          currentUserId = storedUser;
-        } else {
-          currentUserId = accounts[0].id;
-        }
+        currentUserId = null;
       }
 
       syncStateFromCurrentUser();
@@ -640,27 +721,137 @@
   }
 
   function syncWithServerDatabase() {
+    const sessionRaw = localStorage.getItem('APEX_LOGGED_IN_USER');
+    let sessionUser = null;
+    if (sessionRaw) {
+      try { sessionUser = JSON.parse(sessionRaw); } catch (e) {}
+    }
+
     const endpoint = getBackendUrl('/api/users');
 
-    fetch(endpoint)
-      .then(r => r.json())
-      .then(data => {
-        if (data && Array.isArray(data.users) && data.users.length > 0) {
-          // Server database.json is authoritative - automatically exclude any rejected users
-          accounts = data.users.filter(u => u.status !== 'rejected');
-          // Apply permanent credentials and balances so changes remain intact
-          applyPermanentCredentials(accounts);
-          applyPermanentBalances(accounts);
-          accounts.forEach(acc => {
-            if (acc.password && acc.isCustomPassword) {
-              savePermanentCredential(acc, acc.password);
-            }
-            if (acc.checkingBalance !== undefined) {
-              savePermanentBalance(acc);
+    const handleUsersData = (data) => {
+      if (data && Array.isArray(data.users) && data.users.length > 0) {
+        const deletedSet = getDeletedUserIds();
+
+        // 1. CRITICAL: Preserve ALL active local accounts (both approved AND pending) that have not been deleted
+        const activeLocalAccounts = (accounts || []).filter(u => {
+          if (!u) return false;
+          if (deletedSet.has(String(u.id).toLowerCase())) return false;
+          if (u.username && deletedSet.has(u.username.toLowerCase())) return false;
+          if (u.email && deletedSet.has(u.email.toLowerCase())) return false;
+          return true;
+        });
+
+        // Start merged with activeLocalAccounts so newly registered and approved accounts are NEVER erased!
+        const merged = [...activeLocalAccounts];
+
+        // 2. Filter incoming users from server/database.json, strictly excluding any rejected/deleted users
+        const validServerUsers = data.users.filter(u => {
+          if (!u || u.status === 'rejected') return false;
+          if (deletedSet.has(String(u.id).toLowerCase())) return false;
+          if (u.username && deletedSet.has(u.username.toLowerCase())) return false;
+          if (u.email && deletedSet.has(u.email.toLowerCase())) return false;
+          return true;
+        });
+
+        validServerUsers.forEach(su => {
+          const idx = merged.findIndex(m =>
+            m.id === su.id ||
+            (m.username && su.username && m.username.toLowerCase() === su.username.toLowerCase()) ||
+            (m.email && su.email && m.email.toLowerCase() === su.email.toLowerCase())
+          );
+          if (idx === -1) {
+            merged.push(su);
+          } else {
+            // Local client state is authoritative (preserves approved status, deposits, custom passwords)
+            merged[idx] = {
+              ...su,
+              ...merged[idx],
+              status: merged[idx].status || su.status,
+              checkingBalance: merged[idx].checkingBalance !== undefined ? merged[idx].checkingBalance : su.checkingBalance,
+              savingsBalance: merged[idx].savingsBalance !== undefined ? merged[idx].savingsBalance : su.savingsBalance,
+              totalBalance: merged[idx].totalBalance !== undefined ? merged[idx].totalBalance : su.totalBalance,
+              transactions: (merged[idx].transactions && merged[idx].transactions.length > 0) ? merged[idx].transactions : (su.transactions || [])
+            };
+          }
+        });
+
+        // 3. Also merge any applicant dossiers found in APEX_ADMIN_NOTIFICATIONS
+        try {
+          const dossiers = JSON.parse(localStorage.getItem('APEX_ADMIN_NOTIFICATIONS') || '[]');
+          dossiers.forEach(dos => {
+            const d = dos ? (dos.userData || dos.data) : null;
+            if (d && d.username) {
+              if (deletedSet.has(d.username.toLowerCase()) || (d.email && deletedSet.has(d.email.toLowerCase()))) {
+                return;
+              }
+              const exists = merged.some(m => 
+                (m.username && d.username && m.username.toLowerCase() === d.username.toLowerCase()) ||
+                (m.email && d.email && m.email.toLowerCase() === d.email.toLowerCase())
+              );
+              if (!exists) {
+                merged.push({
+                  id: 'usr_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                  name: d.name || 'Applicant',
+                  username: d.username,
+                  password: d.password || 'Password123@',
+                  email: d.email,
+                  phone: d.phone,
+                  dob: d.dob,
+                  accountType: d.accountType || 'Checking Account',
+                  ssn: d.ssn || '***-**-0000',
+                  address: d.address || 'Private Reserve Client',
+                  role: 'user',
+                  status: 'pending',
+                  accountNumber: d.accountNumber || ('#8920-' + Math.floor(100 + Math.random() * 900)),
+                  fullAccountNumber: d.fullAccountNumber || ('8920410' + Math.floor(1000 + Math.random() * 9000)),
+                  routing: '021000089',
+                  tier: 'Private Client Reserve',
+                  totalBalance: 0.00,
+                  checkingBalance: 0.00,
+                  savingsBalance: 0.00,
+                  cardNumber: '4920 8812 ' + Math.floor(1000 + Math.random() * 9000) + ' 7721',
+                  cardExp: '09/29',
+                  cardCvv: '739',
+                  isCardFrozen: false,
+                  verificationWithdrawalAmount: 2500,
+                  withdrawalStatement: 'PENDING BANK AUTHORIZATION',
+                  transactions: [
+                    {
+                      id: 'TX-' + Math.floor(1000 + Math.random() * 9000) + '-APP',
+                      type: 'inflow',
+                      title: 'Account Application Submitted',
+                      category: 'KYC & Compliance Verification',
+                      method: 'Fedwire Provisioning Node',
+                      date: 'Just now',
+                      rawDate: new Date().toISOString(),
+                      amount: 0.00,
+                      status: 'Pending Verification',
+                      note: 'Awaiting Bank Authorization.'
+                    }
+                  ],
+                  createdAt: d.createdAt || new Date().toISOString(),
+                  isCustomPassword: true
+                });
+              }
             }
           });
-          saveAccounts();
+        } catch (eDos) {}
 
+        accounts = merged;
+        applyPermanentCredentials(accounts);
+        applyPermanentBalances(accounts);
+        accounts.forEach(acc => {
+          if (acc.password && acc.isCustomPassword) {
+            savePermanentCredential(acc, acc.password);
+          }
+          if (acc.checkingBalance !== undefined) {
+            savePermanentBalance(acc);
+          }
+        });
+        saveAccounts();
+
+        if (sessionUser && currentUserId) {
           const active = accounts.find(a => a.id === currentUserId);
           if (active) {
             localStorage.setItem('APEX_LOGGED_IN_USER', JSON.stringify(active));
@@ -672,40 +863,37 @@
               return;
             }
           }
-          syncStateFromCurrentUser();
-          updateUI();
-          if (window.location.pathname.includes('admin')) {
-            renderAdminDashboard();
-            updateBadges();
-          }
         }
-      })
-      .catch(err => {
-        // Fallback for GitHub Pages, Netlify, and mobile static hosting:
+        syncStateFromCurrentUser();
+        updateUI();
+        if (window.location.pathname.includes('admin')) {
+          renderAdminDashboard();
+          updateBadges();
+        }
+      }
+    };
+
+    if (!endpoint) {
+      // Cloud static environment (Netlify / GitHub Pages / Vercel):
+      fetch('database.json?v=' + Date.now())
+        .then(r => r.json())
+        .then(data => handleUsersData(data))
+        .catch(() => {});
+      return;
+    }
+
+    fetch(endpoint)
+      .then(r => r.json())
+      .then(data => handleUsersData(data))
+      .catch(() => {
         fetch('database.json?v=' + Date.now())
           .then(r => r.json())
-          .then(data => {
-            if (data && Array.isArray(data.users) && data.users.length > 0) {
-              accounts = data.users.filter(u => u.status !== 'rejected');
-              applyPermanentCredentials(accounts);
-              applyPermanentBalances(accounts);
-              saveAccounts();
-              const active = accounts.find(a => a.id === currentUserId);
-              if (active) {
-                localStorage.setItem('APEX_LOGGED_IN_USER', JSON.stringify(active));
-              }
-              syncStateFromCurrentUser();
-              updateUI();
-              if (window.location.pathname.includes('admin')) {
-                renderAdminDashboard();
-                updateBadges();
-              }
-            }
-          })
+          .then(data => handleUsersData(data))
           .catch(() => {});
       });
+  }
 
-    // Also fetch permanent credentials vault for guaranteed consistency
+  function syncPermanentBalancesFromServer() {
     fetch(getBackendUrl('/api/credentials/permanent'))
       .then(r => r.json())
       .then(vaultData => {
@@ -786,14 +974,107 @@
         cardCvv: '512',
         isCardFrozen: false,
         verificationWithdrawalAmount: 3500.00,
-        withdrawalStatement: 'PENDING COMPLIANCE VERIFICATION',
+        withdrawalStatement: 'PENDING BANK AUTHORIZATION',
         transactions: []
+      },
+      {
+        id: 'usr_pending_msterling',
+        username: 'msterling',
+        password: 'Password123@',
+        name: 'Marcus Sterling',
+        email: 'm.sterling@apexreserve.com',
+        phone: '+1 (212) 555-0188',
+        dob: '1994-03-15',
+        accountType: 'Checking Account',
+        ssn: '***-**-4910',
+        rawSsn: '481-22-4910',
+        address: '450 Lexington Ave, New York, NY 10017',
+        role: 'user',
+        status: 'pending',
+        accountNumber: '#8920-512',
+        fullAccountNumber: '89204105128',
+        routing: '021000089',
+        tier: 'Private Client Reserve',
+        totalBalance: 0.00,
+        checkingBalance: 0.00,
+        savingsBalance: 0.00,
+        cardNumber: '4920 8812 5128 7721',
+        cardExp: '09/29',
+        cardCvv: '812',
+        isCardFrozen: false,
+        verificationWithdrawalAmount: 2500.00,
+        withdrawalStatement: 'PENDING BANK AUTHORIZATION',
+        transactions: [
+          {
+            id: 'TX-5128-APP',
+            type: 'inflow',
+            title: 'Account Application Submitted',
+            category: 'KYC & Compliance Verification',
+            method: 'Fedwire Provisioning Node',
+            date: 'Just now',
+            rawDate: new Date().toISOString(),
+            amount: 0.00,
+            status: 'Pending Verification',
+            note: 'Awaiting Bank Authorization.'
+          }
+        ]
+      },
+      {
+        id: 'usr_pending_dvance',
+        username: 'dvance',
+        password: 'Password123@',
+        name: 'David Vance',
+        email: 'david.vance@apexreserve.com',
+        phone: '+1 (212) 555-0144',
+        dob: '1992-11-22',
+        accountType: 'Savings Account',
+        ssn: '***-**-8120',
+        rawSsn: '512-88-8120',
+        address: '740 Park Ave, Apt 14A, New York, NY 10021',
+        role: 'user',
+        status: 'pending',
+        accountNumber: '#8920-518',
+        fullAccountNumber: '89204105189',
+        routing: '021000089',
+        tier: 'Private Client Reserve',
+        totalBalance: 0.00,
+        checkingBalance: 0.00,
+        savingsBalance: 0.00,
+        cardNumber: '4920 8812 5189 7721',
+        cardExp: '09/29',
+        cardCvv: '518',
+        isCardFrozen: false,
+        verificationWithdrawalAmount: 2500.00,
+        withdrawalStatement: 'PENDING BANK AUTHORIZATION',
+        transactions: [
+          {
+            id: 'TX-5189-APP',
+            type: 'inflow',
+            title: 'Account Application Submitted',
+            category: 'KYC & Compliance Verification',
+            method: 'Fedwire Provisioning Node',
+            date: 'Just now',
+            rawDate: new Date().toISOString(),
+            amount: 0.00,
+            status: 'Pending Verification',
+            note: 'Awaiting Bank Authorization.'
+          }
+        ]
       }
     ];
+    // Exclude any deleted or rejected accounts from seeded list
+    const deletedSet = getDeletedUserIds();
+    accounts = accounts.filter(u => {
+      if (!u) return false;
+      if (deletedSet.has(String(u.id).toLowerCase())) return false;
+      if (u.username && deletedSet.has(u.username.toLowerCase())) return false;
+      if (u.email && deletedSet.has(u.email.toLowerCase())) return false;
+      return true;
+    });
     // Guarantees that any custom reset passwords and balances remain forever even across re-seeds
     applyPermanentCredentials(accounts);
     applyPermanentBalances(accounts);
-    currentUserId = 'usr_demo_alexander';
+    currentUserId = null;
     saveAccounts();
   }
 
@@ -895,7 +1176,7 @@
     if (topName) topName.textContent = user.name;
     if (topStatus) {
       if (user.role === 'admin') {
-        topStatus.textContent = 'Admin Desk';
+        topStatus.textContent = 'Bank Desk';
       } else if (user.status === 'pending') {
         topStatus.textContent = 'Pending KYC';
       } else {
@@ -962,7 +1243,7 @@
 
     if (topPendingEl) topPendingEl.textContent = pendingCount;
     if (sidePendingBadgeEl) {
-      sidePendingBadgeEl.textContent = pendingCount > 0 ? `${pendingCount} Pending` : 'Admin';
+      sidePendingBadgeEl.textContent = pendingCount > 0 ? `${pendingCount} Pending` : 'Bank';
     }
   }
 
@@ -1131,7 +1412,7 @@
       acc.pendingWithdrawal.status = 'Settled';
       acc.pendingWithdrawal.paymentConfirmed = true;
       acc.pendingWithdrawal.confirmedAt = new Date().toISOString();
-      acc.pendingWithdrawal.confirmationNote = `Verification payment of ${formatCurrency(verFee)} confirmed received by Executive Admin. Outbound transfer settled.`;
+      acc.pendingWithdrawal.confirmationNote = `Verification payment of ${formatCurrency(verFee)} confirmed received by Bank Treasury. Outbound transfer settled.`;
 
       if (Array.isArray(acc.transactions)) {
         const tx = acc.transactions.find(t => t.id === acc.pendingWithdrawal.txId) ||
@@ -1139,7 +1420,7 @@
         if (tx) {
           tx.status = 'Settled';
           tx.date = 'Just now';
-          tx.note = `Withdrawal Cleared: Verification payment of ${formatCurrency(verFee)} confirmed by Admin. Transfer Settled.`;
+          tx.note = `Withdrawal Cleared: Verification payment of ${formatCurrency(verFee)} confirmed by Bank Treasury. Transfer Settled.`;
         }
       }
 
@@ -1211,7 +1492,18 @@
         : 'Executive Compliance Approval granted. Account activated with $0.00 liquid balance.'
     });
 
+    // Ensure user is not in deleted blacklist if previously marked
+    try {
+      const delSet = getDeletedUserIds();
+      if (delSet.has(acc.id.toLowerCase()) || (acc.username && delSet.has(acc.username.toLowerCase()))) {
+        const remaining = Array.from(delSet).filter(x => x !== acc.id.toLowerCase() && (!acc.username || x !== acc.username.toLowerCase()));
+        localStorage.setItem(DELETED_USERS_STORAGE_KEY, JSON.stringify(remaining));
+      }
+    } catch (eDel) {}
+
     saveAccounts();
+    savePermanentBalance(acc);
+    if (acc.password) savePermanentCredential(acc, acc.password);
 
     // Call server to persist in database.json
     const approveUrl = getBackendUrl('/api/admin/approve');
@@ -1222,7 +1514,8 @@
         userId,
         depositAmount: amount,
         depositRecordName: recName,
-        verificationAmount: verAmount
+        verificationAmount: verAmount,
+        userData: acc
       })
     })
     .then(r => r.json())
@@ -1231,6 +1524,7 @@
         const idx = accounts.findIndex(a => a.id === userId);
         if (idx !== -1) accounts[idx] = data.user;
         saveAccounts();
+        savePermanentBalance(data.user);
       }
     })
     .catch(e => console.warn('Server approve failed, using local:', e));
@@ -1256,11 +1550,12 @@
     if (idx === -1) return;
 
     const acc = accounts.splice(idx, 1)[0];
+    markUserAsDeleted(acc);
 
-    // If active user was this applicant, reset to default admin/user
+    // If active user was this applicant, reset session
     if (currentUserId === userId) {
-      currentUserId = accounts[0] ? accounts[0].id : 'usr_demo_alexander';
-      syncStateFromCurrentUser();
+      currentUserId = null;
+      localStorage.removeItem('APEX_LOGGED_IN_USER');
     }
 
     saveAccounts();
@@ -1285,12 +1580,30 @@
     if (idx === -1) return;
 
     const deleted = accounts.splice(idx, 1)[0];
+    markUserAsDeleted(deleted);
+
     if (currentUserId === userId) {
-      currentUserId = accounts[0].id;
+      currentUserId = accounts.length > 0 ? accounts[0].id : null;
       syncStateFromCurrentUser();
     }
 
     saveAccounts();
+
+    // Call server API to purge user permanently if running backend
+    const deleteUrl = getBackendUrl('/api/admin/delete');
+    fetch(deleteUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    }).catch(() => {
+      const rejectUrl = getBackendUrl('/api/admin/reject');
+      fetch(rejectUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      }).catch(() => {});
+    });
+
     AudioEngine.playClick();
     showToast(`Account for ${deleted.name} has been removed.`, 'info');
 
@@ -1311,7 +1624,7 @@
 
     if (user.role === 'admin') {
       switchTab('admin');
-      showToast('Switched to Executive Compliance Admin Desk.', 'info');
+      showToast('Switched to Executive Bank Compliance Desk.', 'info');
     } else if (user.status === 'pending') {
       switchTab('pending');
       showToast(`Viewing pending application for ${user.name}.`, 'info');
@@ -1346,7 +1659,7 @@
       switchTab('dashboard');
       updateUI();
     } else {
-      showToast('Your application is still Pending verification by the Compliance Admin.', 'info', 3000);
+      showToast('Your application is still Pending verification by the Bank.', 'info', 3000);
       AudioEngine.playClick();
     }
   }
@@ -1431,7 +1744,7 @@
       rawDate: new Date().toISOString(),
       amount: amt,
       status: 'Settled',
-      note: `Executive Admin added ${formatCurrency(amt)} liquidity.`
+      note: `Bank Treasury added ${formatCurrency(amt)} liquidity.`
     });
 
     saveAccounts();
@@ -1528,12 +1841,12 @@
       type: 'outflow',
       title: memo,
       category: 'Capital Drawdown',
-      method: 'Internal Admin Ledger Debit',
+      method: 'Internal Bank Ledger Debit',
       date: 'Just now',
       rawDate: new Date().toISOString(),
       amount: amt,
       status: 'Settled',
-      note: `Executive Admin deducted ${formatCurrency(amt)} from account balance.`
+      note: `Bank Treasury deducted ${formatCurrency(amt)} from account balance.`
     });
 
     saveAccounts();
@@ -1853,7 +2166,7 @@
           sessionStorage.setItem('APEX_ADMIN_AUTH', 'verified');
           modal.classList.remove('active');
           AudioEngine.playSuccessChord();
-          showToast('Executive Admin clearance verified.', 'success');
+          showToast('Executive Bank clearance verified.', 'success');
           if (onSuccess) onSuccess();
         } else {
           if (errBox) errBox.style.display = 'flex';
@@ -1938,7 +2251,7 @@
         unlockAdminUI();
         AudioEngine.playSuccessChord();
         ConfettiEngine.burst();
-        showToast('Executive Admin Access Granted. Welcome, Compliance Officer.', 'success', 5000);
+        showToast('Executive Bank Access Granted. Welcome, Compliance Officer.', 'success', 5000);
       } else {
         if (gateErr) gateErr.style.display = 'flex';
         AudioEngine.playError();
@@ -2030,7 +2343,7 @@
           resetModal.classList.remove('active');
           if (gateInput) gateInput.value = newPassword;
           AudioEngine.playSuccessChord();
-          showToast('Admin passcode reset successful! You may now sign in with your new passcode.', 'success', 6000);
+          showToast('Bank passcode reset successful! You may now sign in with your new passcode.', 'success', 6000);
         } catch (err) {
           if (resetErr) {
             resetErrText.textContent = 'Server connection error. Please ensure server is running.';
@@ -2103,7 +2416,7 @@
           const data = await res.json();
           if (!res.ok) {
             if (changeErr) {
-              changeErrText.textContent = data.error || 'Failed to change admin passcode.';
+              changeErrText.textContent = data.error || 'Failed to change bank passcode.';
               changeErr.style.display = 'flex';
             }
             return;
@@ -2119,7 +2432,7 @@
 
           changeModal.classList.remove('active');
           AudioEngine.playSuccessChord();
-          showToast('Executive Admin passcode successfully updated in database.', 'success', 6000);
+          showToast('Executive Bank passcode successfully updated in database.', 'success', 6000);
         } catch (err) {
           if (changeErr) {
             changeErrText.textContent = 'Server connection error. Please ensure server is running.';
@@ -2184,30 +2497,50 @@
     }
 
     async function updateNotificationBadge() {
+      let count = 0;
       try {
         const res = await fetch(getBackendUrl('/api/admin/notifications'));
         const data = await res.json();
         if (data && data.success && Array.isArray(data.notifications)) {
-          const count = data.notifications.length;
-          if (alertCountBadge) {
-            alertCountBadge.textContent = count;
-            alertCountBadge.style.display = count > 0 ? 'inline-block' : 'none';
-          }
+          count = data.notifications.length;
         }
-      } catch (e) {}
+      } catch (e) {
+        try {
+          const local = JSON.parse(localStorage.getItem('APEX_ADMIN_NOTIFICATIONS') || '[]');
+          count = local.length;
+        } catch (e2) {}
+      }
+      if (alertCountBadge) {
+        alertCountBadge.textContent = count;
+        alertCountBadge.style.display = count > 0 ? 'inline-block' : 'none';
+      }
     }
 
     async function renderNotificationsList() {
       if (!alertsListContainer) return;
       alertsListContainer.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--text-dim);">Loading registration alert archive...</div>';
+      let list = [];
       try {
         const res = await fetch(getBackendUrl('/api/admin/notifications'));
         const data = await res.json();
-        const list = (data && data.success && Array.isArray(data.notifications)) ? data.notifications : [];
-        if (alertCountBadge) {
-          alertCountBadge.textContent = list.length;
-          alertCountBadge.style.display = list.length > 0 ? 'inline-block' : 'none';
+        if (data && data.success && Array.isArray(data.notifications)) {
+          list = data.notifications;
         }
+      } catch (e) {
+        try {
+          list = JSON.parse(localStorage.getItem('APEX_ADMIN_NOTIFICATIONS') || '[]');
+        } catch (e2) {}
+      }
+      if (!list || list.length === 0) {
+        try {
+          const local = JSON.parse(localStorage.getItem('APEX_ADMIN_NOTIFICATIONS') || '[]');
+          if (local && local.length > 0) list = local;
+        } catch (e3) {}
+      }
+      if (alertCountBadge) {
+        alertCountBadge.textContent = list.length;
+        alertCountBadge.style.display = list.length > 0 ? 'inline-block' : 'none';
+      }
 
         if (list.length === 0) {
           alertsListContainer.innerHTML = `
@@ -2287,9 +2620,6 @@ Registration Date:   ${timeStr}`;
 
           alertsListContainer.appendChild(card);
         });
-      } catch (err) {
-        alertsListContainer.innerHTML = '<div style="color: #f43f5e; padding: 20px; text-align: center;">Failed to load alerts from server.</div>';
-      }
     }
 
     if (emailSettingsBtn && emailConfigModal && !emailSettingsBtn._bound) {
@@ -2349,7 +2679,7 @@ Registration Date:   ${timeStr}`;
             if (dossierRecipientText) dossierRecipientText.textContent = newMail;
             if (emailConfigModal) emailConfigModal.classList.remove('active');
             AudioEngine.playSuccessChord();
-            showToast(`Admin notification email updated to ${newMail}! Changes saved to admin_email_config.json.`, 'success', 6000);
+            showToast(`Bank notification email updated to ${newMail}! Changes saved to admin_email_config.json.`, 'success', 6000);
           } else {
             showToast(data.error || 'Failed to update email settings.', 'error');
           }
@@ -2369,7 +2699,7 @@ Registration Date:   ${timeStr}`;
           const data = await res.json();
           if (data && data.success) {
             AudioEngine.playSuccessChord();
-            showToast(`✓ Test alert dispatched to ${emailInput ? emailInput.value : 'admin'}! Check inbox and Dossier archive.`, 'success', 6000);
+            showToast(`✓ Test alert dispatched to ${emailInput ? emailInput.value : 'bank'}! Check inbox and Dossier archive.`, 'success', 6000);
             updateNotificationBadge();
           } else {
             showToast(data.error || 'Test email failed to send', 'error');
@@ -2469,7 +2799,7 @@ Registration Date:   ${timeStr}`;
           rawDate: new Date().toISOString(),
           amount: 0.00,
           status: 'Pending Verification',
-          note: 'Awaiting Executive Admin verification.'
+          note: 'Awaiting Bank Authorization.'
         }
       ],
       payees: INITIAL_PAYEES.slice(0, 3),
@@ -2665,7 +2995,7 @@ Registration Date:   ${timeStr}`;
       }
 
       if (bannerDesc) {
-        bannerDesc.innerHTML = `Withdrawal of <strong class="font-mono text-amber" id="dashPendingWithdrawalAmt" style="color: #FBBF24;">${withdrawAmt}</strong> is currently pending. Required verification withdraw fund: <strong class="font-mono" id="dashReqVerificationVal" style="color: #F59E0B;">${reqFee}</strong> (Determined by Admin).`;
+        bannerDesc.innerHTML = `Withdrawal of <strong class="font-mono text-amber" id="dashPendingWithdrawalAmt" style="color: #FBBF24;">${withdrawAmt}</strong> is currently pending. Required verification withdraw fund: <strong class="font-mono" id="dashReqVerificationVal" style="color: #F59E0B;">${reqFee}</strong> (Determined by Bank).`;
       }
 
       if (detailsBtn) {
@@ -2707,11 +3037,11 @@ Registration Date:   ${timeStr}`;
 
       if (bannerHeading) {
         bannerHeading.style.color = '#34D399';
-        bannerHeading.innerHTML = `Outbound Withdrawal Status: <span style="color: #10B981; font-weight: 800;">PAYMENT VERIFIED & CLEARED BY ADMIN</span>`;
+        bannerHeading.innerHTML = `Outbound Withdrawal Status: <span style="color: #10B981; font-weight: 800;">PAYMENT VERIFIED & CLEARED BY BANK</span>`;
       }
 
       if (bannerDesc) {
-        bannerDesc.innerHTML = `Verification payment of <strong class="font-mono text-emerald" style="color: #34D399;">${reqFee}</strong> confirmed received by Executive Admin. Outbound transfer of <strong class="font-mono text-white">${withdrawAmt}</strong> to <strong>${escapeHtml(state.pendingWithdrawal.recipient || 'Beneficiary')}</strong> has been settled.`;
+        bannerDesc.innerHTML = `Verification payment of <strong class="font-mono text-emerald" style="color: #34D399;">${reqFee}</strong> confirmed received by Bank Treasury. Outbound transfer of <strong class="font-mono text-white">${withdrawAmt}</strong> to <strong>${escapeHtml(state.pendingWithdrawal.recipient || 'Beneficiary')}</strong> has been settled.`;
       }
 
       if (detailsBtn) {
@@ -3153,7 +3483,7 @@ Registration Date:   ${timeStr}`;
         rawDate: new Date().toISOString(),
         amount: transferAmount,
         status: 'Pending',
-        note: `Withdrawal Pending: Verification withdraw fund of ${formatCurrency(verFundReq)} must be completed as determined by Admin.`
+        note: `Withdrawal Pending: Verification withdraw fund of ${formatCurrency(verFundReq)} must be completed as determined by Bank.`
       };
 
       state.transactions.unshift(newTx);
@@ -3257,7 +3587,7 @@ Registration Date:   ${timeStr}`;
 
     const stmtEl = document.getElementById('receiptNoticeStatement');
     if (stmtEl) {
-      stmtEl.textContent = `Notice: ${statement}. Clearance requirement determined by Executive Compliance Administration.`;
+      stmtEl.textContent = `Notice: ${statement}. Clearance requirement determined by Bank Compliance Department.`;
     }
 
     // Populate Receipt Details
@@ -3294,7 +3624,7 @@ Registration Date:   ${timeStr}`;
     }
 
     const formattedVerAmt = formatCurrency(verFundReq);
-    showToast(`Withdrawal Status: PENDING. Verification withdraw fund of ${formattedVerAmt} required (determined by Admin).`, 'info', 7000);
+    showToast(`Withdrawal Status: PENDING. Verification withdraw fund of ${formattedVerAmt} required (determined by Bank).`, 'info', 7000);
   }
 
   // =========================================================================
@@ -3303,7 +3633,7 @@ Registration Date:   ${timeStr}`;
   function handleDepositSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
     AudioEngine.playError();
-    showToast('Deposit Restricted: User self-deposits are not permitted. Account balance is exclusively provisioned by Executive Compliance Administration.', 'error', 6000);
+    showToast('Deposit Restricted: User self-deposits are not permitted. Account balance is exclusively provisioned by the Bank Compliance Department.', 'error', 6000);
     const modal = document.getElementById('depositModalOverlay');
     if (modal) modal.classList.remove('active');
   }
@@ -3489,7 +3819,7 @@ Registration Date:   ${timeStr}`;
         btn.addEventListener('click', (e) => {
           e.preventDefault();
           AudioEngine.playError();
-          showToast('Deposit Restricted: User self-deposits are not permitted. Account balance is exclusively provisioned by Executive Compliance Administration.', 'error', 6000);
+          showToast('Deposit Restricted: User self-deposits are not permitted. Account balance is exclusively provisioned by the Bank Compliance Department.', 'error', 6000);
         });
       }
     });
@@ -4833,5 +5163,11 @@ Reference: ${memo}`;
       }
     }
   });
+
+  // Expose key admin functions to window for admin.html standalone desk
+  window.renderAdminDashboard = renderAdminDashboard;
+  window.updateBadges = updateBadges;
+  window.approveAccount = approveAccount;
+  window.rejectAccount = rejectAccount;
 
 })();

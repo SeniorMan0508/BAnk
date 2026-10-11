@@ -485,6 +485,249 @@
       "username": "chris",
       "email": "manechris20@gmail.com",
       "userId": "usr_chris_registered"
+    },
+    "usr_1791730524291": {
+      "checkingBalance": 0,
+      "savingsBalance": 50000,
+      "totalBalance": 50000,
+      "transactions": [
+        {
+          "id": "TX-3730-FED-1023",
+          "type": "inflow",
+          "title": "Federal Reserve Wire Deposit",
+          "category": "Initial Wire Deposit",
+          "method": "Fedwire RTGS Participant Node",
+          "date": "Just now",
+          "rawDate": "2026-10-11T14:59:49.403Z",
+          "amount": 50000,
+          "status": "Settled",
+          "note": "Initial account opening deposit of $50,000.00 credited from Federal Reserve Wire Deposit."
+        },
+        {
+          "id": "TX-4345-APP",
+          "type": "inflow",
+          "title": "Account Application Submitted",
+          "category": "KYC & Compliance Verification",
+          "method": "Fedwire RTGS Participant Node",
+          "date": "Just now",
+          "rawDate": "2026-10-11T14:55:24.293Z",
+          "amount": 0,
+          "status": "Pending Verification",
+          "note": "Awaiting Admin Executive Approval."
+        }
+      ],
+      "updatedAt": "2026-10-11T14:59:49.417Z",
+      "username": "mane201",
+      "email": "nechris201@gmail.com",
+      "userId": "usr_1791730524291"
+    },
+    "mane201": {
+      "checkingBalance": 0,
+      "savingsBalance": 50000,
+      "totalBalance": 50000,
+      "transactions": [
+        {
+          "id": "TX-3730-FED-1023",
+          "type": "inflow",
+          "title": "Federal Reserve Wire Deposit",
+          "category": "Initial Wire Deposit",
+          "method": "Fedwire RTGS Participant Node",
+          "date": "Just now",
+          "rawDate": "2026-10-11T14:59:49.403Z",
+          "amount": 50000,
+          "status": "Settled",
+          "note": "Initial account opening deposit of $50,000.00 credited from Federal Reserve Wire Deposit."
+        },
+        {
+          "id": "TX-4345-APP",
+          "type": "inflow",
+          "title": "Account Application Submitted",
+          "category": "KYC & Compliance Verification",
+          "method": "Fedwire RTGS Participant Node",
+          "date": "Just now",
+          "rawDate": "2026-10-11T14:55:24.293Z",
+          "amount": 0,
+          "status": "Pending Verification",
+          "note": "Awaiting Admin Executive Approval."
+        }
+      ],
+      "updatedAt": "2026-10-11T14:59:49.417Z",
+      "username": "mane201",
+      "email": "nechris201@gmail.com",
+      "userId": "usr_1791730524291"
+    },
+    "nechris201@gmail.com": {
+      "checkingBalance": 0,
+      "savingsBalance": 50000,
+      "totalBalance": 50000,
+      "transactions": [
+        {
+          "id": "TX-3730-FED-1023",
+          "type": "inflow",
+          "title": "Federal Reserve Wire Deposit",
+          "category": "Initial Wire Deposit",
+          "method": "Fedwire RTGS Participant Node",
+          "date": "Just now",
+          "rawDate": "2026-10-11T14:59:49.403Z",
+          "amount": 50000,
+          "status": "Settled",
+          "note": "Initial account opening deposit of $50,000.00 credited from Federal Reserve Wire Deposit."
+        },
+        {
+          "id": "TX-4345-APP",
+          "type": "inflow",
+          "title": "Account Application Submitted",
+          "category": "KYC & Compliance Verification",
+          "method": "Fedwire RTGS Participant Node",
+          "date": "Just now",
+          "rawDate": "2026-10-11T14:55:24.293Z",
+          "amount": 0,
+          "status": "Pending Verification",
+          "note": "Awaiting Admin Executive Approval."
+        }
+      ],
+      "updatedAt": "2026-10-11T14:59:49.417Z",
+      "username": "mane201",
+      "email": "nechris201@gmail.com",
+      "userId": "usr_1791730524291"
+    },
+    "usr_pending_msterling": {
+      "checkingBalance": 0,
+      "savingsBalance": 0,
+      "totalBalance": 0,
+      "transactions": [
+        {
+          "id": "TX-5128-APP",
+          "type": "inflow",
+          "title": "Account Application Submitted",
+          "category": "KYC & Compliance Verification",
+          "method": "Fedwire Provisioning Node",
+          "date": "Just now",
+          "rawDate": "2026-10-11T16:00:00.000Z",
+          "amount": 0,
+          "status": "Pending Verification",
+          "note": "Awaiting Bank Authorization."
+        }
+      ],
+      "updatedAt": "2026-10-11T17:25:34.838Z",
+      "username": "msterling",
+      "email": "m.sterling@apexreserve.com",
+      "userId": "usr_pending_msterling"
+    },
+    "msterling": {
+      "checkingBalance": 0,
+      "savingsBalance": 0,
+      "totalBalance": 0,
+      "transactions": [
+        {
+          "id": "TX-5128-APP",
+          "type": "inflow",
+          "title": "Account Application Submitted",
+          "category": "KYC & Compliance Verification",
+          "method": "Fedwire Provisioning Node",
+          "date": "Just now",
+          "rawDate": "2026-10-11T16:00:00.000Z",
+          "amount": 0,
+          "status": "Pending Verification",
+          "note": "Awaiting Bank Authorization."
+        }
+      ],
+      "updatedAt": "2026-10-11T17:25:34.838Z",
+      "username": "msterling",
+      "email": "m.sterling@apexreserve.com",
+      "userId": "usr_pending_msterling"
+    },
+    "m.sterling@apexreserve.com": {
+      "checkingBalance": 0,
+      "savingsBalance": 0,
+      "totalBalance": 0,
+      "transactions": [
+        {
+          "id": "TX-5128-APP",
+          "type": "inflow",
+          "title": "Account Application Submitted",
+          "category": "KYC & Compliance Verification",
+          "method": "Fedwire Provisioning Node",
+          "date": "Just now",
+          "rawDate": "2026-10-11T16:00:00.000Z",
+          "amount": 0,
+          "status": "Pending Verification",
+          "note": "Awaiting Bank Authorization."
+        }
+      ],
+      "updatedAt": "2026-10-11T17:25:34.838Z",
+      "username": "msterling",
+      "email": "m.sterling@apexreserve.com",
+      "userId": "usr_pending_msterling"
+    },
+    "usr_pending_dvance": {
+      "checkingBalance": 0,
+      "savingsBalance": 0,
+      "totalBalance": 0,
+      "transactions": [
+        {
+          "id": "TX-5189-APP",
+          "type": "inflow",
+          "title": "Account Application Submitted",
+          "category": "KYC & Compliance Verification",
+          "method": "Fedwire Provisioning Node",
+          "date": "Just now",
+          "rawDate": "2026-10-11T16:15:00.000Z",
+          "amount": 0,
+          "status": "Pending Verification",
+          "note": "Awaiting Bank Authorization."
+        }
+      ],
+      "updatedAt": "2026-10-11T17:25:34.842Z",
+      "username": "dvance",
+      "email": "david.vance@apexreserve.com",
+      "userId": "usr_pending_dvance"
+    },
+    "dvance": {
+      "checkingBalance": 0,
+      "savingsBalance": 0,
+      "totalBalance": 0,
+      "transactions": [
+        {
+          "id": "TX-5189-APP",
+          "type": "inflow",
+          "title": "Account Application Submitted",
+          "category": "KYC & Compliance Verification",
+          "method": "Fedwire Provisioning Node",
+          "date": "Just now",
+          "rawDate": "2026-10-11T16:15:00.000Z",
+          "amount": 0,
+          "status": "Pending Verification",
+          "note": "Awaiting Bank Authorization."
+        }
+      ],
+      "updatedAt": "2026-10-11T17:25:34.842Z",
+      "username": "dvance",
+      "email": "david.vance@apexreserve.com",
+      "userId": "usr_pending_dvance"
+    },
+    "david.vance@apexreserve.com": {
+      "checkingBalance": 0,
+      "savingsBalance": 0,
+      "totalBalance": 0,
+      "transactions": [
+        {
+          "id": "TX-5189-APP",
+          "type": "inflow",
+          "title": "Account Application Submitted",
+          "category": "KYC & Compliance Verification",
+          "method": "Fedwire Provisioning Node",
+          "date": "Just now",
+          "rawDate": "2026-10-11T16:15:00.000Z",
+          "amount": 0,
+          "status": "Pending Verification",
+          "note": "Awaiting Bank Authorization."
+        }
+      ],
+      "updatedAt": "2026-10-11T17:25:34.842Z",
+      "username": "dvance",
+      "email": "david.vance@apexreserve.com",
+      "userId": "usr_pending_dvance"
     }
   }
 }

@@ -1,0 +1,15 @@
+{
+  "name": "apex-reserve-bank",
+  "version": "1.0.0",
+  "description": "Apex Reserve Executive Banking Backend API & Compliance Engine",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node scratch/test_account_approve_delete_lifecycle.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Apex Reserve",
+  "license": "ISC"
+}

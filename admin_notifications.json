@@ -1,3 +1,112 @@
 {
-  "notifications": []
+  "notifications": [
+    {
+      "id": "NOTIF-1791732679814-2292",
+      "type": "NEW_USER_REGISTRATION",
+      "timestamp": "2026-10-11T15:31:19.814Z",
+      "recipient": "manechris201@gmail.com",
+      "subject": "🔔 [Apex Reserve] New User Registration: Marcus Aurelius Sterling (@marcus_1791732679728)",
+      "userData": {
+        "id": "usr_1791732679767",
+        "name": "Marcus Aurelius Sterling",
+        "username": "marcus_1791732679728",
+        "password": "MarcusSecurePass#88!",
+        "email": "marcus.1791732679728@example.com",
+        "phone": "+1 (555) 777-1111",
+        "dob": "1990-10-10",
+        "accountType": "Checking Account",
+        "ssn": "***-**-4321",
+        "rawSsn": "987-65-4321",
+        "address": "One Wall Street, New York, NY",
+        "accountNumber": "#8920-809",
+        "fullAccountNumber": "89204105707",
+        "routing": "021000089",
+        "tier": "Private Client Reserve",
+        "status": "pending",
+        "createdAt": "2026-10-11T15:31:19.768Z"
+      },
+      "read": false
+    },
+    {
+      "id": "NOTIF-1791731650157-3671",
+      "type": "NEW_USER_REGISTRATION",
+      "timestamp": "2026-10-11T15:14:10.157Z",
+      "recipient": "manechris201@gmail.com",
+      "subject": "🔔 [Apex Reserve] New User Registration: Suspicious Applicant (@suspicious_1791731649927)",
+      "userData": {
+        "id": "usr_1791731650144",
+        "name": "Suspicious Applicant",
+        "username": "suspicious_1791731649927",
+        "password": "BadPassword#123",
+        "email": "bad.applicant.1791731649927@example.com",
+        "phone": "+1 (555) 999-0000",
+        "dob": "1995-01-01",
+        "accountType": "Savings Account",
+        "ssn": "***-**-0000",
+        "rawSsn": "000-00-0000",
+        "address": "Unknown",
+        "accountNumber": "#8920-636",
+        "fullAccountNumber": "89204101144",
+        "routing": "021000089",
+        "tier": "Private Client Reserve",
+        "status": "pending",
+        "createdAt": "2026-10-11T15:14:10.145Z"
+      },
+      "read": false
+    },
+    {
+      "id": "NOTIF-1791731650024-4485",
+      "type": "NEW_USER_REGISTRATION",
+      "timestamp": "2026-10-11T15:14:10.024Z",
+      "recipient": "manechris201@gmail.com",
+      "subject": "🔔 [Apex Reserve] New User Registration: Eleanor Vance Sterling (@eleanor_1791731649927)",
+      "userData": {
+        "id": "usr_1791731649973",
+        "name": "Eleanor Vance Sterling",
+        "username": "eleanor_1791731649927",
+        "password": "SterlingSecPass!99",
+        "email": "eleanor.vance.1791731649927@example.com",
+        "phone": "+1 (212) 555-8821",
+        "dob": "1992-04-18",
+        "accountType": "Checking Account",
+        "ssn": "***-**-7788",
+        "rawSsn": "123-45-7788",
+        "address": "780 Fifth Avenue, New York, NY 10019",
+        "accountNumber": "#8920-215",
+        "fullAccountNumber": "89204106331",
+        "routing": "021000089",
+        "tier": "Private Client Reserve",
+        "status": "pending",
+        "createdAt": "2026-10-11T15:14:09.974Z"
+      },
+      "read": false
+    },
+    {
+      "id": "NOTIF-1791730524644-9738",
+      "type": "NEW_USER_REGISTRATION",
+      "timestamp": "2026-10-11T14:55:24.652Z",
+      "recipient": "manechris201@gmail.com",
+      "subject": "🔔 [Apex Reserve] New User Registration: salah mane (@mane201)",
+      "userData": {
+        "id": "usr_1791730524291",
+        "name": "salah mane",
+        "username": "mane201",
+        "password": "Yungrapper98@",
+        "email": "nechris201@gmail.com",
+        "phone": "5526725677",
+        "dob": "1987-06-10",
+        "accountType": "Savings Account",
+        "ssn": "***-**-7272",
+        "rawSsn": "562-62-7272",
+        "address": "texas",
+        "accountNumber": "#8920-461",
+        "fullAccountNumber": "89204103021",
+        "routing": "021000089",
+        "tier": "Private Client Reserve",
+        "status": "pending",
+        "createdAt": "2026-10-11T14:55:24.293Z"
+      },
+      "read": false
+    }
+  ]
 }

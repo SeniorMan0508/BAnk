@@ -13,3 +13,9 @@ Whenever an admin rejects an applicant or user:
 - They must not linger in a "rejected" status.
 - Any subsequent login attempt with their credentials must immediately return `"User does not exist"`.
 
+## 3. No Automatic Git Push
+- **Never push code to GitHub or any remote repository automatically.**
+- All fixes, refactoring, and test executions must be performed and verified strictly in the local workspace.
+- `git push` must ONLY be executed when the user explicitly gives direct instructions to push the code.
+
+

