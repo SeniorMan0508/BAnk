@@ -1,8 +1,3 @@
-/**
- * APEX RESERVE PRIVATE BANKING APPLICATION
- * Digital Wealth Management, Real-Time Fedwire Settlement Engine & Dynamic Ledger
- */
-
 (function () {
   'use strict';
 
@@ -14,6 +9,65 @@
   const INITIAL_TOTAL_BALANCE = 500000.00; // $500,000 balance requested
 
   const STORAGE_KEY = 'APEX_RESERVE_STATE_V2';
+
+  // Cross-origin & Localhost backend resolution helper
+  function getBackendUrl(path) {
+    if (window.location.port === '8080') {
+      return path;
+    }
+    return 'http://localhost:8080' + path;
+  }
+
+  // =========================================================================
+  // AUTOMATIC INACTIVITY TIMEOUT ENGINE (5 MINUTES)
+  // =========================================================================
+  const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes standard timeout
+  let lastActivityTimestamp = Date.now();
+
+  function recordUserActivity() {
+    lastActivityTimestamp = Date.now();
+  }
+
+  function initInactivityTimeout() {
+    ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'].forEach(evt => {
+      window.addEventListener(evt, recordUserActivity, { passive: true });
+    });
+
+    setInterval(() => {
+      const now = Date.now();
+      if (now - lastActivityTimestamp >= INACTIVITY_TIMEOUT_MS) {
+        lastActivityTimestamp = now;
+
+        const isGatePage = window.location.pathname.includes('admin');
+        if (isGatePage) {
+          const isVerified = sessionStorage.getItem('APEX_ADMIN_AUTH') === 'verified';
+          if (isVerified) {
+            sessionStorage.removeItem('APEX_ADMIN_AUTH');
+            document.body.classList.add('admin-locked');
+            const gateOverlay = document.getElementById('adminSecurityGateOverlay');
+            if (gateOverlay) {
+              gateOverlay.classList.remove('hidden');
+              const gateInput = document.getElementById('adminGatePasswordInput');
+              if (gateInput) gateInput.value = '';
+            }
+            if (typeof AudioEngine !== 'undefined' && AudioEngine.playError) AudioEngine.playError();
+            if (typeof showToast === 'function') {
+              showToast('Security Alert: Admin dashboard locked due to 5 minutes of inactivity.', 'error', 7000);
+            }
+          }
+        } else {
+          const sessionRaw = localStorage.getItem('APEX_LOGGED_IN_USER');
+          if (sessionRaw) {
+            localStorage.removeItem('APEX_LOGGED_IN_USER');
+            localStorage.removeItem('APEX_RESERVE_ACTIVE_USER_ID_V2');
+            localStorage.removeItem('APEX_RESERVE_ACTIVE_USER_V2');
+            sessionStorage.removeItem('APEX_ADMIN_AUTH');
+            window.location.href = 'login.html?timeout=true';
+          }
+        }
+      }
+    }, 5000);
+  }
 
   // Sample VIP frequent recipients
   const INITIAL_PAYEES = [
@@ -121,7 +175,10 @@
     isCardFrozen: false,
     isBalanceVisible: true,
     soundEnabled: true,
-    lastReceipt: null
+    lastReceipt: null,
+    verificationWithdrawalAmount: 2500.00,
+    withdrawalStatement: 'PENDING COMPLIANCE VERIFICATION',
+    pendingWithdrawal: null
   };
 
   // =========================================================================
@@ -271,39 +328,2162 @@
   };
 
   // =========================================================================
-  // PERSISTENCE & LOCALSTORAGE HELPERS
+  // MULTI-ACCOUNT ARCHITECTURE, PERSISTENCE & ADMIN ENGINE
   // =========================================================================
+  const ACCOUNTS_STORAGE_KEY = 'APEX_RESERVE_ACCOUNTS_V2';
+  const CURRENT_USER_STORAGE_KEY = 'APEX_RESERVE_ACTIVE_USER_V2';
+  const PERMANENT_CREDENTIALS_KEY = 'APEX_PERMANENT_CREDENTIALS_V1';
+  const BACKUP_CREDENTIALS_KEY = 'APEX_PASSWORD_VAULT_BACKUP';
+  const PERMANENT_BALANCES_KEY = 'APEX_PERMANENT_BALANCES_V2';
+  const BACKUP_BALANCES_KEY = 'APEX_BALANCE_VAULT_BACKUP_V2';
+
+  // =========================================================================
+  // IMMUTABLE CREDENTIALS VAULT (PERSISTENT PASSWORDS ENGINE)
+  // Ensures any password reset by user or admin remains forever regardless
+  // of any website code upgrades, local storage resets, or seed re-initializations.
+  // =========================================================================
+  function getPermanentCredentials() {
+    try {
+      const raw = localStorage.getItem(PERMANENT_CREDENTIALS_KEY) || localStorage.getItem(BACKUP_CREDENTIALS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch (e) {}
+    return {};
+  }
+
+  function savePermanentCredential(userOrIdentifier, newPassword) {
+    if (!newPassword) return;
+    try {
+      const creds = getPermanentCredentials();
+      const now = new Date().toISOString();
+      const entry = { password: newPassword, updatedAt: now };
+
+      if (typeof userOrIdentifier === 'string') {
+        const key = userOrIdentifier.trim().toLowerCase();
+        if (key) creds[key] = entry;
+      } else if (userOrIdentifier && typeof userOrIdentifier === 'object') {
+        if (userOrIdentifier.id) creds[String(userOrIdentifier.id).toLowerCase()] = entry;
+        if (userOrIdentifier.username) creds[String(userOrIdentifier.username).toLowerCase()] = entry;
+        if (userOrIdentifier.email) creds[String(userOrIdentifier.email).toLowerCase()] = entry;
+      }
+      localStorage.setItem(PERMANENT_CREDENTIALS_KEY, JSON.stringify(creds));
+      localStorage.setItem(BACKUP_CREDENTIALS_KEY, JSON.stringify(creds));
+    } catch (e) {}
+  }
+
+  function applyPermanentCredentials(accountsList) {
+    if (!Array.isArray(accountsList)) return accountsList;
+    const creds = getPermanentCredentials();
+    accountsList.forEach(acc => {
+      const idKey = (acc.id || '').toLowerCase();
+      const uKey = (acc.username || '').toLowerCase();
+      const eKey = (acc.email || '').toLowerCase();
+      const match = creds[idKey] || creds[uKey] || creds[eKey];
+      if (match && match.password) {
+        acc.password = match.password;
+        acc.isCustomPassword = true;
+        acc.passwordUpdatedAt = match.updatedAt;
+      }
+    });
+    return accountsList;
+  }
+
+  // =========================================================================
+  // IMMUTABLE BALANCE VAULT (PERSISTENT BALANCES & LEDGER ENGINE)
+  // Ensures any balance increased or decreased by admin remains forever
+  // regardless of any website code upgrades, local storage resets, or seed re-initializations.
+  // =========================================================================
+  function getPermanentBalances() {
+    try {
+      const raw = localStorage.getItem(PERMANENT_BALANCES_KEY) || localStorage.getItem(BACKUP_BALANCES_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch (e) {}
+    return {};
+  }
+
+  function savePermanentBalance(user) {
+    if (!user) return;
+    try {
+      const vault = getPermanentBalances();
+      const now = new Date().toISOString();
+      const entry = {
+        checkingBalance: user.checkingBalance,
+        savingsBalance: user.savingsBalance,
+        totalBalance: user.totalBalance,
+        transactions: Array.isArray(user.transactions) ? user.transactions.slice(0, 50) : [],
+        updatedAt: now,
+        id: user.id || '',
+        username: user.username || '',
+        email: user.email || ''
+      };
+      if (user.id) vault[String(user.id).toLowerCase()] = entry;
+      if (user.username) vault[String(user.username).toLowerCase()] = entry;
+      if (user.email) vault[String(user.email).toLowerCase()] = entry;
+      localStorage.setItem(PERMANENT_BALANCES_KEY, JSON.stringify(vault));
+      localStorage.setItem(BACKUP_BALANCES_KEY, JSON.stringify(vault));
+    } catch (e) {}
+  }
+
+  function applyPermanentBalances(accountsList) {
+    if (!Array.isArray(accountsList)) return accountsList;
+    const vault = getPermanentBalances();
+    accountsList.forEach(acc => {
+      const idKey = (acc.id || '').toLowerCase();
+      const uKey = (acc.username || '').toLowerCase();
+      const eKey = (acc.email || '').toLowerCase();
+      const match = vault[idKey] || vault[uKey] || vault[eKey];
+      if (match && typeof match.checkingBalance === 'number') {
+        acc.checkingBalance = match.checkingBalance;
+        acc.savingsBalance = match.savingsBalance !== undefined ? match.savingsBalance : acc.savingsBalance;
+        acc.totalBalance = match.totalBalance;
+        if (Array.isArray(match.transactions) && match.transactions.length > 0) {
+          acc.transactions = match.transactions;
+        }
+      }
+    });
+    return accountsList;
+  }
+
+  function syncPermanentBalancesFromServer() {
+    fetch(getBackendUrl('/api/balances/permanent'))
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.success && data.balances) {
+          const local = getPermanentBalances();
+          let changed = false;
+          for (const [key, val] of Object.entries(data.balances)) {
+            if (!local[key] || new Date(val.updatedAt || 0) >= new Date(local[key].updatedAt || 0)) {
+              local[key] = val;
+              changed = true;
+            }
+          }
+          if (changed) {
+            localStorage.setItem(PERMANENT_BALANCES_KEY, JSON.stringify(local));
+            localStorage.setItem(BACKUP_BALANCES_KEY, JSON.stringify(local));
+            if (Array.isArray(accounts) && accounts.length > 0) {
+              applyPermanentBalances(accounts);
+              saveAccounts();
+              syncStateFromCurrentUser();
+              updateUI();
+            }
+          }
+        }
+      })
+      .catch(() => {});
+  }
+
+  const DEFAULT_ALEXANDER_ACCOUNT = {
+    id: 'usr_demo_alexander',
+    username: 'alexander',
+    password: 'password123',
+    name: 'Alexander Reed',
+    email: 'alexander.reed@apexreserve.com',
+    phone: '+1 (212) 555-0199',
+    role: 'user',
+    status: 'approved',
+    accountNumber: '#8920-410',
+    fullAccountNumber: '89204109402',
+    routing: '021000089',
+    tier: 'Tier 1 Elite Private',
+    totalBalance: INITIAL_TOTAL_BALANCE,
+    checkingBalance: INITIAL_CHECKING_BALANCE,
+    savingsBalance: INITIAL_SAVINGS_BALANCE,
+    cardNumber: '4920 8812 3904 7721',
+    cardExp: '09/29',
+    cardCvv: '739',
+    isCardFrozen: false,
+    verificationWithdrawalAmount: 2500.00,
+    withdrawalStatement: 'PENDING COMPLIANCE VERIFICATION',
+    transactions: INITIAL_TRANSACTIONS.slice(),
+    payees: INITIAL_PAYEES.slice(),
+    createdAt: new Date(Date.now() - 86400000 * 30).toISOString()
+  };
+
+  const DEFAULT_ADMIN_ACCOUNT = {
+    id: 'usr_admin_compliance',
+    username: 'admin',
+    password: 'admin123',
+    name: 'Apex Compliance Officer',
+    email: 'admin@apexreserve.com',
+    phone: '+1 (212) 555-0100',
+    role: 'admin',
+    status: 'approved',
+    accountNumber: '#ADMIN-001',
+    fullAccountNumber: '89200000001',
+    routing: '021000089',
+    tier: 'Federal Reserve RTGS Clearing Admin',
+    totalBalance: 0.00,
+    checkingBalance: 0.00,
+    savingsBalance: 0.00,
+    cardNumber: '4920 0000 0000 0001',
+    cardExp: '12/30',
+    cardCvv: '999',
+    isCardFrozen: false,
+    transactions: [],
+    payees: [],
+    createdAt: new Date(Date.now() - 86400000 * 60).toISOString()
+  };
+
+  let accounts = [];
+  let currentUserId = 'usr_demo_alexander';
+  let adminFilter = 'all'; // 'all' | 'pending' | 'approved'
+  let adminSearchQuery = '';
+
   function loadState() {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        state = Object.assign(state, parsed);
+      const isIndexPage = !window.location.pathname.includes('admin') &&
+                          !window.location.pathname.includes('login') &&
+                          !window.location.pathname.includes('pending');
+
+      const isPendingPage = window.location.pathname.includes('pending');
+
+      // 1. Session check
+      const sessionRaw = localStorage.getItem('APEX_LOGGED_IN_USER');
+      let sessionUser = null;
+      if (sessionRaw) {
+        try { sessionUser = JSON.parse(sessionRaw); } catch (e) {}
       }
+
+      // If on index.html without session, redirect to login page immediately
+      if (!sessionUser && isIndexPage) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // If user is pending, route to pending verification page
+      if (sessionUser && sessionUser.status === 'pending' && isIndexPage) {
+        window.location.href = 'pending.html';
+        return;
+      }
+
+      const storedAccounts = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
+      if (storedAccounts) {
+        accounts = JSON.parse(storedAccounts);
+        if (!Array.isArray(accounts) || accounts.length === 0) {
+          seedDefaultAccounts();
+        }
+      } else {
+        seedDefaultAccounts();
+      }
+
+      // Enforce permanent credentials and permanent balances so seed defaults never overwrite them
+      applyPermanentCredentials(accounts);
+      applyPermanentBalances(accounts);
+
+      // Ensure every account has valid username and password credentials
+      let updatedCredentials = false;
+      const permCreds = getPermanentCredentials();
+      accounts.forEach(acc => {
+        const idKey = (acc.id || '').toLowerCase();
+        const uKey = (acc.username || '').toLowerCase();
+        const eKey = (acc.email || '').toLowerCase();
+        const perm = permCreds[idKey] || permCreds[uKey] || permCreds[eKey];
+
+        if (perm && perm.password) {
+          acc.password = perm.password;
+          acc.isCustomPassword = true;
+        } else if (!acc.password) {
+          acc.password = (acc.role === 'admin' ? 'admin123' : 'password123');
+          updatedCredentials = true;
+        }
+
+        if (!acc.username) {
+          if (acc.id === 'usr_demo_alexander') acc.username = 'alexander';
+          else if (acc.id === 'usr_admin_compliance') acc.username = 'admin';
+          else acc.username = acc.email ? acc.email.split('@')[0] : 'user_' + String(acc.id).slice(-4);
+          updatedCredentials = true;
+        }
+      });
+      if (updatedCredentials) {
+        saveAccounts();
+      }
+
+      if (sessionUser) {
+        currentUserId = sessionUser.id;
+        const existingIdx = accounts.findIndex(a => a.id === sessionUser.id);
+        if (existingIdx !== -1) {
+          const curAcc = accounts[existingIdx];
+          accounts[existingIdx] = {
+            ...curAcc,
+            ...sessionUser,
+            // CRITICAL: Preserve latest verified account balance and transactions
+            checkingBalance: curAcc.checkingBalance !== undefined ? curAcc.checkingBalance : sessionUser.checkingBalance,
+            savingsBalance: curAcc.savingsBalance !== undefined ? curAcc.savingsBalance : sessionUser.savingsBalance,
+            totalBalance: curAcc.totalBalance !== undefined ? curAcc.totalBalance : sessionUser.totalBalance,
+            transactions: (curAcc.transactions && curAcc.transactions.length > 0) ? curAcc.transactions : (sessionUser.transactions || [])
+          };
+        } else {
+          accounts.push(sessionUser);
+        }
+      } else {
+        const storedUser = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+        if (storedUser && accounts.some(a => a.id === storedUser)) {
+          currentUserId = storedUser;
+        } else {
+          currentUserId = accounts[0].id;
+        }
+      }
+
+      syncStateFromCurrentUser();
+      syncWithServerDatabase();
+      syncPermanentBalancesFromServer();
     } catch (e) {
       console.warn('Could not read state from localStorage:', e);
+      seedDefaultAccounts();
+      syncStateFromCurrentUser();
+    }
+  }
+
+  function syncWithServerDatabase() {
+    const endpoint = getBackendUrl('/api/users');
+
+    fetch(endpoint)
+      .then(r => r.json())
+      .then(data => {
+        if (data && Array.isArray(data.users) && data.users.length > 0) {
+          // Server database.json is authoritative - automatically exclude any rejected users
+          accounts = data.users.filter(u => u.status !== 'rejected');
+          // Apply permanent credentials and balances so changes remain intact
+          applyPermanentCredentials(accounts);
+          applyPermanentBalances(accounts);
+          accounts.forEach(acc => {
+            if (acc.password && acc.isCustomPassword) {
+              savePermanentCredential(acc, acc.password);
+            }
+            if (acc.checkingBalance !== undefined) {
+              savePermanentBalance(acc);
+            }
+          });
+          saveAccounts();
+
+          const active = accounts.find(a => a.id === currentUserId);
+          if (active) {
+            localStorage.setItem('APEX_LOGGED_IN_USER', JSON.stringify(active));
+            const isIndexPage = !window.location.pathname.includes('admin') &&
+                                !window.location.pathname.includes('login') &&
+                                !window.location.pathname.includes('pending');
+            if (active.status === 'pending' && isIndexPage) {
+              window.location.href = 'pending.html';
+              return;
+            }
+          }
+          syncStateFromCurrentUser();
+          updateUI();
+          if (window.location.pathname.includes('admin')) {
+            renderAdminDashboard();
+            updateBadges();
+          }
+        }
+      })
+      .catch(err => {
+        console.warn('Could not sync accounts from server:', err);
+      });
+
+    // Also fetch permanent credentials vault for guaranteed consistency
+    fetch(getBackendUrl('/api/credentials/permanent'))
+      .then(r => r.json())
+      .then(vaultData => {
+        if (vaultData && vaultData.credentials) {
+          const local = getPermanentCredentials();
+          let updated = false;
+          for (const key of Object.keys(vaultData.credentials)) {
+            const entry = vaultData.credentials[key];
+            if (entry && entry.password) {
+              if (!local[key] || local[key].password !== entry.password) {
+                local[key] = entry;
+                updated = true;
+              }
+            }
+          }
+          if (updated) {
+            localStorage.setItem(PERMANENT_CREDENTIALS_KEY, JSON.stringify(local));
+            localStorage.setItem(BACKUP_CREDENTIALS_KEY, JSON.stringify(local));
+            applyPermanentCredentials(accounts);
+            saveAccounts();
+          }
+        }
+      })
+      .catch(() => {});
+  }
+
+  function seedDefaultAccounts() {
+    accounts = [
+      JSON.parse(JSON.stringify(DEFAULT_ADMIN_ACCOUNT)),
+      JSON.parse(JSON.stringify(DEFAULT_ALEXANDER_ACCOUNT)),
+      {
+        id: 'usr_chris_registered',
+        username: 'chris',
+        password: 'password123',
+        name: 'Chis Mane',
+        email: 'manechris20@gmail.com',
+        phone: '+2347049045720',
+        dob: '1991-08-20',
+        accountType: 'Checking Account',
+        ssn: '***-**-1234',
+        address: '450 Lexington Ave, New York, NY',
+        role: 'user',
+        status: 'approved',
+        accountNumber: '#8920-430',
+        fullAccountNumber: '89204104301',
+        routing: '021000089',
+        tier: 'Private Client Reserve',
+        totalBalance: 100000.00,
+        checkingBalance: 100000.00,
+        savingsBalance: 0.00,
+        cardNumber: '4920 4819 2841 9021',
+        cardExp: '09/29',
+        cardCvv: '512',
+        isCardFrozen: false,
+        verificationWithdrawalAmount: 3500.00,
+        withdrawalStatement: 'PENDING COMPLIANCE VERIFICATION',
+        transactions: []
+      }
+    ];
+    // Guarantees that any custom reset passwords and balances remain forever even across re-seeds
+    applyPermanentCredentials(accounts);
+    applyPermanentBalances(accounts);
+    currentUserId = 'usr_demo_alexander';
+    saveAccounts();
+  }
+
+  function saveAccounts() {
+    try {
+      localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(accounts));
+    } catch (e) {
+      console.warn('Could not save accounts to localStorage:', e);
     }
   }
 
   function saveState() {
     try {
+      syncCurrentUserFromState();
+      saveAccounts();
+      localStorage.setItem(CURRENT_USER_STORAGE_KEY, currentUserId);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (e) {
       console.warn('Could not save state to localStorage:', e);
     }
   }
 
-  function resetToInitialDemoState() {
-    state.totalBalance = INITIAL_TOTAL_BALANCE;
-    state.checkingBalance = INITIAL_CHECKING_BALANCE;
-    state.savingsBalance = INITIAL_SAVINGS_BALANCE;
-    state.transactions = INITIAL_TRANSACTIONS.slice();
-    state.payees = INITIAL_PAYEES.slice();
-    state.isCardFrozen = false;
-    saveState();
-    updateUI();
-    showToast('Demo balance restored to $500,000.00', 'info');
+  function getCurrentUser() {
+    let u = accounts.find(a => a.id === currentUserId);
+    if (!u) {
+      u = accounts[0] || DEFAULT_ALEXANDER_ACCOUNT;
+      currentUserId = u.id;
+    }
+    return u;
+  }
+
+  function syncStateFromCurrentUser() {
+    const u = getCurrentUser();
+    if (!u) return;
+    state.totalBalance = typeof u.totalBalance === 'number' ? u.totalBalance : 0.00;
+    state.checkingBalance = typeof u.checkingBalance === 'number' ? u.checkingBalance : 0.00;
+    state.savingsBalance = typeof u.savingsBalance === 'number' ? u.savingsBalance : 0.00;
+    state.transactions = Array.isArray(u.transactions) ? u.transactions : [];
+    state.payees = Array.isArray(u.payees) && u.payees.length > 0 ? u.payees : INITIAL_PAYEES.slice();
+    state.isCardFrozen = !!u.isCardFrozen;
+    state.verificationWithdrawalAmount = typeof u.verificationWithdrawalAmount === 'number' ? u.verificationWithdrawalAmount : 2500.00;
+    state.withdrawalStatement = u.withdrawalStatement || 'PENDING COMPLIANCE VERIFICATION';
+    state.pendingWithdrawal = u.pendingWithdrawal || null;
+  }
+
+  function syncCurrentUserFromState() {
+    const u = getCurrentUser();
+    if (u) {
+      u.totalBalance = state.totalBalance;
+      u.checkingBalance = state.checkingBalance;
+      u.savingsBalance = state.savingsBalance;
+      u.transactions = state.transactions;
+      u.payees = state.payees;
+      u.isCardFrozen = state.isCardFrozen;
+      u.verificationWithdrawalAmount = typeof state.verificationWithdrawalAmount === 'number' ? state.verificationWithdrawalAmount : 2500.00;
+      u.withdrawalStatement = state.withdrawalStatement || 'PENDING COMPLIANCE VERIFICATION';
+      u.pendingWithdrawal = state.pendingWithdrawal;
+    }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getInitials(name) {
+    if (!name) return 'AP';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  function renderUserProfile() {
+    const user = getCurrentUser();
+    if (!user) return;
+
+    const initials = getInitials(user.name);
+
+    // Sidebar user details
+    const sideAvatar = document.getElementById('sidebarUserAvatar');
+    const sideName = document.getElementById('sidebarUserName');
+    const sideAcc = document.getElementById('sidebarUserAcc');
+    const sideTier = document.getElementById('sidebarTierPill');
+    if (sideAvatar) sideAvatar.textContent = initials;
+    if (sideName) sideName.textContent = user.name;
+    if (sideAcc) sideAcc.textContent = `Private Acc: ${user.accountNumber}`;
+    if (sideTier && user.tier) sideTier.textContent = user.tier;
+
+    // Topbar user details
+    const topAvatar = document.getElementById('topbarUserAvatar');
+    const topName = document.getElementById('topbarUserName');
+    const topStatus = document.getElementById('topbarUserStatus');
+    if (topAvatar) topAvatar.textContent = initials;
+    if (topName) topName.textContent = user.name;
+    if (topStatus) {
+      if (user.role === 'admin') {
+        topStatus.textContent = 'Admin Desk';
+      } else if (user.status === 'pending') {
+        topStatus.textContent = 'Pending KYC';
+      } else {
+        topStatus.textContent = `Approved (${formatCurrency(user.totalBalance)})`;
+      }
+    }
+
+    // Main Card Holder
+    const cardHolderEl = document.getElementById('cardHolderNameDisplay');
+    if (cardHolderEl) cardHolderEl.textContent = user.name.toUpperCase();
+
+    // Main Card Digits
+    const cardNumEl = document.getElementById('cardNumberDisplay');
+    if (cardNumEl && user.cardNumber) {
+      const parts = user.cardNumber.split(' ');
+      if (parts.length === 4) {
+        cardNumEl.innerHTML = `<span>${parts[0]}</span><span>${parts[1]}</span><span>${parts[2]}</span><span>${parts[3]}</span>`;
+      }
+    }
+
+    // Secondary Card on Cards Portfolio Tab
+    const secCardHolder = document.getElementById('secondaryCardHolderDisplay');
+    const secCardNum = document.getElementById('secondaryCardNumDisplay');
+    if (secCardHolder) secCardHolder.textContent = user.name.toUpperCase();
+    if (secCardNum && user.cardNumber) {
+      const last4 = user.cardNumber.slice(-4);
+      secCardNum.textContent = `•••• •••• •••• ${last4}`;
+    }
+
+    // Beneficiary Account & Name Wire Details
+    const wireAcc = document.getElementById('beneficiaryAccountVal');
+    const wireName = document.getElementById('beneficiaryNameVal');
+    const copyWireAccBtn = document.getElementById('copyBeneficiaryAccBtn');
+    const copyWireNameBtn = document.getElementById('copyBeneficiaryNameBtn');
+    if (wireAcc) wireAcc.textContent = user.fullAccountNumber;
+    if (wireName) wireName.textContent = user.name;
+    if (copyWireAccBtn) copyWireAccBtn.setAttribute('data-copy', user.fullAccountNumber);
+    if (copyWireNameBtn) copyWireNameBtn.setAttribute('data-copy', user.name);
+
+    // Modal Source Account Name
+    const modalSrc = document.getElementById('modalSourceAccName');
+    if (modalSrc) {
+      const last4 = (user.fullAccountNumber || '9402').slice(-4);
+      modalSrc.textContent = `Apex Primary Private Reserve (•• ${last4})`;
+    }
+
+    // Pending View Information
+    const pName = document.getElementById('pendingApplicantName');
+    const pEmail = document.getElementById('pendingApplicantEmail');
+    const pAcc = document.getElementById('pendingApplicantAcc');
+    const pBal = document.getElementById('pendingApplicantBalance');
+    const pRef = document.getElementById('pendingAppRefId');
+    if (pName) pName.textContent = user.name;
+    if (pEmail) pEmail.textContent = user.email;
+    if (pAcc) pAcc.textContent = user.accountNumber;
+    if (pBal) pBal.textContent = formatCurrency(user.totalBalance || 0);
+    if (pRef) pRef.textContent = `APX-APP-${(user.fullAccountNumber || '89204').slice(-5)}`;
+  }
+
+  function updateBadges() {
+    const pendingCount = accounts.filter(a => a.role !== 'admin' && a.status === 'pending').length;
+    const topPendingEl = document.getElementById('topbarPendingCount');
+    const sidePendingBadgeEl = document.getElementById('sidebarPendingBadge');
+
+    if (topPendingEl) topPendingEl.textContent = pendingCount;
+    if (sidePendingBadgeEl) {
+      sidePendingBadgeEl.textContent = pendingCount > 0 ? `${pendingCount} Pending` : 'Admin';
+    }
+  }
+
+  function switchTab(tabId) {
+    const user = getCurrentUser();
+
+    // Prevent regular users from accessing admin view on client dashboard
+    if (tabId === 'admin' && !window.location.pathname.includes('admin')) {
+      tabId = 'dashboard';
+    }
+
+    // If user application is still pending, route them to the pending verification screen
+    if (user && user.status === 'pending' && tabId !== 'admin' && tabId !== 'pending') {
+      tabId = 'pending';
+    }
+
+    document.querySelectorAll('.nav-item').forEach(n => {
+      n.classList.remove('active');
+      if (n.getAttribute('data-tab') === tabId) {
+        n.classList.add('active');
+      }
+    });
+
+    document.querySelectorAll('.tab-view').forEach(view => view.classList.remove('active'));
+    const targetView = document.getElementById(`view-${tabId}`);
+    if (targetView) {
+      targetView.classList.add('active');
+    }
+  }
+
+  function openAdminAcceptModal(userId) {
+    const acc = accounts.find(a => a.id === userId);
+    if (!acc) return;
+
+    const modal = document.getElementById('adminAcceptModalOverlay');
+    if (!modal) {
+      // In case modal element not in DOM, prompt admin directly
+      const depositPrompt = prompt(`How much do you want to deposit for ${acc.name}?`, '0.00');
+      if (depositPrompt === null) return;
+      const depositAmount = parseFloat(depositPrompt) || 0;
+      const recordNamePrompt = prompt(`What name do you want to be in record of the amount deposit?`, 'Federal Reserve Wire Deposit');
+      const recordName = (recordNamePrompt && recordNamePrompt.trim()) || 'Federal Reserve Wire Deposit';
+      approveAccount(userId, depositAmount, recordName);
+      return;
+    }
+
+    const idInput = document.getElementById('adminAcceptUserId');
+    if (idInput) idInput.value = acc.id;
+
+    const nameEl = document.getElementById('adminAcceptApplicantName');
+    if (nameEl) nameEl.textContent = acc.name;
+
+    const detailsEl = document.getElementById('adminAcceptApplicantDetails');
+    if (detailsEl) {
+      detailsEl.textContent = `${acc.accountType || 'Checking Account'} • SSN: ${acc.ssn || '***-**-****'} • Acc: ${acc.accountNumber}`;
+    }
+
+    const amtInput = document.getElementById('adminAcceptDepositAmount');
+    if (amtInput) amtInput.value = '0.00';
+
+    const recInput = document.getElementById('adminAcceptRecordName');
+    if (recInput) recInput.value = 'Federal Reserve Wire Deposit';
+
+    const verInput = document.getElementById('adminAcceptVerificationAmount');
+    if (verInput) verInput.value = (acc.verificationWithdrawalAmount || 2500).toFixed(2);
+
+    AudioEngine.playClick();
+    modal.classList.add('active');
+    if (amtInput) {
+      setTimeout(() => amtInput.focus(), 80);
+    }
+  }
+
+  function openAdminSetVerificationModal(userId) {
+    const acc = accounts.find(a => a.id === userId);
+    if (!acc) return;
+
+    const modal = document.getElementById('adminSetVerificationModalOverlay');
+    if (!modal) return;
+
+    const idInput = document.getElementById('adminSetVerificationUserId');
+    const nameEl = document.getElementById('adminSetVerificationClientName');
+    const detailsEl = document.getElementById('adminSetVerificationClientDetails');
+    const amountInput = document.getElementById('adminVerificationAmountInput');
+    const statementInput = document.getElementById('adminWithdrawalStatementInput');
+
+    if (idInput) idInput.value = acc.id;
+    if (nameEl) nameEl.textContent = acc.name;
+    if (detailsEl) detailsEl.textContent = `${acc.email} • Acc: ${acc.accountNumber} • Balance: ${formatCurrency(acc.totalBalance || 0)}`;
+    if (amountInput) amountInput.value = (acc.verificationWithdrawalAmount || 2500).toFixed(2);
+    if (statementInput) statementInput.value = acc.withdrawalStatement || 'PENDING COMPLIANCE VERIFICATION';
+
+    // Show or hide Active Pending Withdrawal Card in modal
+    const pendingCard = document.getElementById('adminModalPendingWithdrawalCard');
+    const pendingAmount = document.getElementById('adminModalPendingAmount');
+    const pendingRecipient = document.getElementById('adminModalPendingRecipient');
+    const pendingMeta = document.getElementById('adminModalPendingMeta');
+    const confirmBtn = document.getElementById('adminModalConfirmPaymentBtn');
+
+    const hasPending = acc.pendingWithdrawal && acc.pendingWithdrawal.status === 'Pending';
+
+    if (pendingCard) {
+      if (hasPending) {
+        pendingCard.style.display = 'block';
+        if (pendingAmount) pendingAmount.textContent = formatCurrency(acc.pendingWithdrawal.amount || 0);
+        if (pendingRecipient) pendingRecipient.textContent = acc.pendingWithdrawal.recipient || 'External Beneficiary';
+        if (pendingMeta) {
+          pendingMeta.textContent = `Bank Wire • Required Verification: ${formatCurrency(acc.pendingWithdrawal.requiredVerification || acc.verificationWithdrawalAmount || 2500)}`;
+        }
+        if (confirmBtn) {
+          confirmBtn.onclick = (e) => {
+            e.preventDefault();
+            confirmWithdrawalPayment(acc.id);
+          };
+        }
+      } else {
+        pendingCard.style.display = 'none';
+      }
+    }
+
+    AudioEngine.playClick();
+    modal.classList.add('active');
+    if (amountInput) {
+      setTimeout(() => {
+        amountInput.focus();
+        amountInput.select();
+      }, 80);
+    }
+  }
+
+  async function confirmWithdrawalPayment(userId) {
+    const acc = accounts.find(a => a.id === userId);
+    if (!acc || !acc.pendingWithdrawal || acc.pendingWithdrawal.status !== 'Pending') {
+      showToast('No active pending withdrawal found for this client.', 'warning');
+      return;
+    }
+
+    const withdrawAmt = acc.pendingWithdrawal.amount || 0;
+    const verFee = acc.pendingWithdrawal.requiredVerification || acc.verificationWithdrawalAmount || 2500;
+    const recipient = acc.pendingWithdrawal.recipient || 'External Beneficiary';
+
+    const confirmed = confirm(
+      `Confirm Verification Payment Received:\n\n` +
+      `Client: ${acc.name}\n` +
+      `Withdrawal Amount: ${formatCurrency(withdrawAmt)}\n` +
+      `Required Verification Fund: ${formatCurrency(verFee)}\n` +
+      `Recipient: ${recipient}\n\n` +
+      `Click OK to confirm payment has been received, deduct funds, and clear outbound transfer.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(getBackendUrl('/api/admin/confirm-withdrawal-payment'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: acc.id })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'Failed to confirm withdrawal payment', 'error');
+        return;
+      }
+
+      // As requested by admin, charges and withdrawals are NOT deducted from the balance upon confirmation
+      // The client balance remains intact.
+      acc.pendingWithdrawal.status = 'Settled';
+      acc.pendingWithdrawal.paymentConfirmed = true;
+      acc.pendingWithdrawal.confirmedAt = new Date().toISOString();
+      acc.pendingWithdrawal.confirmationNote = `Verification payment of ${formatCurrency(verFee)} confirmed received by Executive Admin. Outbound transfer settled.`;
+
+      if (Array.isArray(acc.transactions)) {
+        const tx = acc.transactions.find(t => t.id === acc.pendingWithdrawal.txId) ||
+                   acc.transactions.find(t => t.type === 'outflow' && t.status === 'Pending');
+        if (tx) {
+          tx.status = 'Settled';
+          tx.date = 'Just now';
+          tx.note = `Withdrawal Cleared: Verification payment of ${formatCurrency(verFee)} confirmed by Admin. Transfer Settled.`;
+        }
+      }
+
+      saveAccounts();
+
+      if (acc.id === currentUserId) {
+        state.checkingBalance = acc.checkingBalance;
+        state.totalBalance = acc.totalBalance;
+        state.pendingWithdrawal = acc.pendingWithdrawal;
+        state.transactions = acc.transactions || state.transactions;
+        saveState();
+      }
+
+      const modal = document.getElementById('adminSetVerificationModalOverlay');
+      if (modal) modal.classList.remove('active');
+
+      AudioEngine.playSuccessChord();
+      ConfettiEngine.burst();
+      showToast(`Payment confirmed! Outbound transfer of ${formatCurrency(withdrawAmt)} cleared for ${acc.name}. User dashboard updated.`, 'success', 6000);
+
+      renderAdminDashboard();
+      updateUI();
+    } catch (err) {
+      console.error('Confirm withdrawal payment failed:', err);
+      showToast('Network error while confirming withdrawal payment', 'error');
+    }
+  }
+
+  function approveAccount(userId, depositAmount = 0, recordName = 'Federal Reserve Wire Deposit', verificationAmount = 2500) {
+    const acc = accounts.find(a => a.id === userId);
+    if (!acc) return;
+
+    acc.status = 'approved';
+    const amount = Math.max(0, parseFloat(depositAmount) || 0);
+    const recName = (recordName && recordName.trim()) || 'Federal Reserve Wire Deposit';
+    const verAmount = Math.max(0, parseFloat(verificationAmount) || 2500);
+
+    acc.verificationWithdrawalAmount = verAmount;
+
+    // Set user balance
+    acc.totalBalance = amount;
+    if (acc.accountType === 'Savings Account') {
+      acc.savingsBalance = amount;
+      acc.checkingBalance = 0.00;
+    } else if (acc.accountType === 'Checking & Savings') {
+      acc.checkingBalance = amount;
+      acc.savingsBalance = 0.00;
+    } else {
+      acc.checkingBalance = amount;
+      acc.savingsBalance = 0.00;
+    }
+
+    // Add settled welcome / initial deposit clearance transaction
+    if (!acc.transactions) acc.transactions = [];
+    const formattedAmount = formatCurrency(amount);
+    const txId = `TX-${Math.floor(1000 + Math.random() * 9000)}-FED-${Math.floor(1000 + Math.random() * 9000)}`;
+    acc.transactions.unshift({
+      id: txId,
+      type: 'inflow',
+      title: recName,
+      category: amount > 0 ? 'Initial Wire Deposit' : 'Compliance Desk Clearance',
+      method: 'Fedwire RTGS Participant Node',
+      date: 'Just now',
+      rawDate: new Date().toISOString(),
+      amount: amount,
+      status: 'Settled',
+      note: amount > 0 
+        ? `Initial account opening deposit of ${formattedAmount} credited from ${recName}.`
+        : 'Executive Compliance Approval granted. Account activated with $0.00 liquid balance.'
+    });
+
+    saveAccounts();
+
+    // Call server to persist in database.json
+    const approveUrl = getBackendUrl('/api/admin/approve');
+    fetch(approveUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        depositAmount: amount,
+        depositRecordName: recName,
+        verificationAmount: verAmount
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.user) {
+        const idx = accounts.findIndex(a => a.id === userId);
+        if (idx !== -1) accounts[idx] = data.user;
+        saveAccounts();
+      }
+    })
+    .catch(e => console.warn('Server approve failed, using local:', e));
+
     AudioEngine.playCashDeposit();
+    ConfettiEngine.burst();
+    showToast(`Account for ${acc.name} ACCEPTED! Balance: ${formattedAmount} • Record: "${recName}"`, 'success', 6000);
+
+    // If current logged-in user is this user, unlock dashboard immediately
+    if (currentUserId === acc.id) {
+      syncStateFromCurrentUser();
+      updateUI();
+      switchTab('dashboard');
+    } else {
+      renderAdminDashboard();
+      updateBadges();
+      renderUserProfile();
+    }
+  }
+
+  function rejectAccount(userId) {
+    const idx = accounts.findIndex(a => a.id === userId);
+    if (idx === -1) return;
+
+    const acc = accounts.splice(idx, 1)[0];
+
+    // If active user was this applicant, reset to default admin/user
+    if (currentUserId === userId) {
+      currentUserId = accounts[0] ? accounts[0].id : 'usr_demo_alexander';
+      syncStateFromCurrentUser();
+    }
+
+    saveAccounts();
+
+    const rejectUrl = getBackendUrl('/api/admin/reject');
+    fetch(rejectUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    }).catch(e => console.warn('Server reject failed:', e));
+
+    AudioEngine.playError();
+    showToast(`Application for ${acc.name} rejected and deleted automatically.`, 'info', 5000);
+
+    renderAdminDashboard();
+    updateBadges();
+    updateUI();
+  }
+
+  function deleteAccount(userId) {
+    const idx = accounts.findIndex(a => a.id === userId);
+    if (idx === -1) return;
+
+    const deleted = accounts.splice(idx, 1)[0];
+    if (currentUserId === userId) {
+      currentUserId = accounts[0].id;
+      syncStateFromCurrentUser();
+    }
+
+    saveAccounts();
+    AudioEngine.playClick();
+    showToast(`Account for ${deleted.name} has been removed.`, 'info');
+
+    renderAdminDashboard();
+    updateBadges();
+    updateUI();
+  }
+
+  function switchToUser(userId) {
+    const user = accounts.find(a => a.id === userId);
+    if (!user) return;
+
+    currentUserId = userId;
+    syncStateFromCurrentUser();
+    saveState();
+
+    AudioEngine.playClick();
+
+    if (user.role === 'admin') {
+      switchTab('admin');
+      showToast('Switched to Executive Compliance Admin Desk.', 'info');
+    } else if (user.status === 'pending') {
+      switchTab('pending');
+      showToast(`Viewing pending application for ${user.name}.`, 'info');
+    } else {
+      switchTab('dashboard');
+      showToast(`Logged in as ${user.name}. Balance: ${formatCurrency(user.totalBalance)}`, 'success');
+    }
+
+    updateUI();
+  }
+
+  function checkPendingStatus() {
+    const user = getCurrentUser();
+    if (!user) return;
+
+    // Read latest from localStorage in case Admin approved in another tab or action
+    try {
+      const stored = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
+      if (stored) {
+        accounts = JSON.parse(stored);
+      }
+    } catch (e) {}
+
+    const updated = accounts.find(a => a.id === user.id);
+    if (updated && updated.status === 'approved') {
+      user.status = 'approved';
+      syncStateFromCurrentUser();
+      saveAccounts();
+      AudioEngine.playSuccessChord();
+      ConfettiEngine.burst();
+      showToast(`Congratulations ${user.name}! Your account has been ACCEPTED & Verified.`, 'success', 6000);
+      switchTab('dashboard');
+      updateUI();
+    } else {
+      showToast('Your application is still Pending verification by the Compliance Admin.', 'info', 3000);
+      AudioEngine.playClick();
+    }
+  }
+
+  function openAdminCreditModal(userId) {
+    const acc = accounts.find(a => a.id === userId);
+    if (!acc) return;
+
+    const modal = document.getElementById('adminCreditModalOverlay');
+    const idInput = document.getElementById('adminCreditUserId');
+    const nameEl = document.getElementById('adminCreditClientName');
+    const detailsEl = document.getElementById('adminCreditClientDetails');
+    const balEl = document.getElementById('adminCreditCurrentBalance');
+    const amtInput = document.getElementById('adminCreditAmountInput');
+
+    if (idInput) idInput.value = acc.id;
+    if (nameEl) nameEl.textContent = acc.name;
+    if (detailsEl) detailsEl.textContent = `${acc.email} • Acc: ${acc.accountNumber}`;
+    if (balEl) balEl.textContent = formatCurrency(acc.totalBalance || 0);
+
+    if (modal) modal.classList.add('active');
+    AudioEngine.playClick();
+    if (amtInput) {
+      setTimeout(() => {
+        amtInput.focus();
+        amtInput.select();
+      }, 80);
+    }
+  }
+
+  async function handleAdminCreditSubmit(e) {
+    e.preventDefault();
+    const idInput = document.getElementById('adminCreditUserId');
+    const amtInput = document.getElementById('adminCreditAmountInput');
+    const memoInput = document.getElementById('adminCreditMemoInput');
+
+    const userId = idInput ? idInput.value : '';
+    const amt = parseFloat(amtInput ? amtInput.value : 0);
+    const memo = (memoInput && memoInput.value.trim()) ? memoInput.value.trim() : 'Federal Reserve Wire Inflow Deposit';
+
+    if (!userId || !amt || amt <= 0) {
+      showToast('Please enter a valid amount greater than $0.', 'error');
+      return;
+    }
+
+    const acc = accounts.find(a => a.id === userId);
+    if (!acc) return;
+
+    // 1. Post to backend server to persist permanently in database.json
+    try {
+      const res = await fetch(getBackendUrl('/api/admin/increase-balance'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: acc.id,
+          amount: amt,
+          memo: memo,
+          recordName: memo
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'Failed to increase balance on server', 'error');
+        return;
+      }
+    } catch (netErr) {
+      console.warn('Backend increase-balance sync warning:', netErr);
+    }
+
+    // 2. Update local state
+    acc.checkingBalance = (acc.checkingBalance || 0) + amt;
+    acc.totalBalance = (acc.totalBalance || 0) + amt;
+
+    if (!acc.transactions) acc.transactions = [];
+    acc.transactions.unshift({
+      id: generateTxId(),
+      type: 'inflow',
+      title: memo,
+      category: 'Treasury Wire',
+      method: 'Fedwire RTGS Participant Node',
+      date: 'Just now',
+      rawDate: new Date().toISOString(),
+      amount: amt,
+      status: 'Settled',
+      note: `Executive Admin added ${formatCurrency(amt)} liquidity.`
+    });
+
+    saveAccounts();
+    savePermanentBalance(acc);
+
+    if (currentUserId === acc.id) {
+      syncStateFromCurrentUser();
+      updateUI();
+    }
+
+    const modal = document.getElementById('adminCreditModalOverlay');
+    if (modal) modal.classList.remove('active');
+
+    AudioEngine.playCashDeposit();
+    ConfettiEngine.burst();
+    showToast(`Successfully increased balance by ${formatCurrency(amt)} for ${acc.name}! Current Balance: ${formatCurrency(acc.totalBalance)}`, 'success', 6000);
+
+    renderAdminDashboard();
+    updateBadges();
+  }
+
+  function openAdminDebitModal(userId) {
+    const acc = accounts.find(a => a.id === userId);
+    if (!acc) return;
+
+    const modal = document.getElementById('adminDebitModalOverlay');
+    const idInput = document.getElementById('adminDebitUserId');
+    const nameEl = document.getElementById('adminDebitClientName');
+    const detailsEl = document.getElementById('adminDebitClientDetails');
+    const balEl = document.getElementById('adminDebitCurrentBalance');
+    const amtInput = document.getElementById('adminDebitAmountInput');
+
+    if (idInput) idInput.value = acc.id;
+    if (nameEl) nameEl.textContent = acc.name;
+    if (detailsEl) detailsEl.textContent = `${acc.email} • Acc: ${acc.accountNumber}`;
+    if (balEl) balEl.textContent = formatCurrency(acc.totalBalance || 0);
+
+    if (modal) modal.classList.add('active');
+    AudioEngine.playClick();
+    if (amtInput) {
+      setTimeout(() => {
+        amtInput.focus();
+        amtInput.select();
+      }, 80);
+    }
+  }
+
+  async function handleAdminDebitSubmit(e) {
+    e.preventDefault();
+    const idInput = document.getElementById('adminDebitUserId');
+    const amtInput = document.getElementById('adminDebitAmountInput');
+    const memoInput = document.getElementById('adminDebitMemoInput');
+
+    const userId = idInput ? idInput.value : '';
+    const amt = parseFloat(amtInput ? amtInput.value : 0);
+    const memo = (memoInput && memoInput.value.trim()) ? memoInput.value.trim() : 'Treasury Capital Drawdown / Adjustment';
+
+    if (!userId || !amt || amt <= 0) {
+      showToast('Please enter a valid amount greater than $0.', 'error');
+      return;
+    }
+
+    const acc = accounts.find(a => a.id === userId);
+    if (!acc) return;
+
+    // 1. Post to backend server to persist permanently in database.json
+    try {
+      const res = await fetch(getBackendUrl('/api/admin/decrease-balance'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: acc.id,
+          amount: amt,
+          memo: memo,
+          recordName: memo
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'Failed to decrease balance on server', 'error');
+        return;
+      }
+    } catch (netErr) {
+      console.warn('Backend decrease-balance sync warning:', netErr);
+    }
+
+    // 2. Update local state
+    acc.checkingBalance = Math.max(0, (acc.checkingBalance || 0) - amt);
+    acc.totalBalance = (acc.checkingBalance || 0) + (acc.savingsBalance || 0);
+
+    if (!acc.transactions) acc.transactions = [];
+    acc.transactions.unshift({
+      id: generateTxId(),
+      type: 'outflow',
+      title: memo,
+      category: 'Capital Drawdown',
+      method: 'Internal Admin Ledger Debit',
+      date: 'Just now',
+      rawDate: new Date().toISOString(),
+      amount: amt,
+      status: 'Settled',
+      note: `Executive Admin deducted ${formatCurrency(amt)} from account balance.`
+    });
+
+    saveAccounts();
+    savePermanentBalance(acc);
+
+    if (currentUserId === acc.id) {
+      syncStateFromCurrentUser();
+      updateUI();
+    }
+
+    const modal = document.getElementById('adminDebitModalOverlay');
+    if (modal) modal.classList.remove('active');
+
+    AudioEngine.playPayment();
+    showToast(`Successfully decreased balance by ${formatCurrency(amt)} for ${acc.name}! Current Balance: ${formatCurrency(acc.totalBalance)}`, 'success', 6000);
+
+    renderAdminDashboard();
+    updateBadges();
+  }
+
+  function renderAdminDashboard() {
+    const totalCountEl = document.getElementById('adminTotalUsersCount');
+    const pendingCountEl = document.getElementById('adminPendingUsersCount');
+    const approvedCountEl = document.getElementById('adminApprovedUsersCount');
+    const totalLiqEl = document.getElementById('adminTotalLiquidDeposits');
+    const filterAllCountEl = document.getElementById('filterAllCount');
+    const filterPendingCountEl = document.getElementById('filterPendingCount');
+    const filterApprovedCountEl = document.getElementById('filterApprovedCount');
+
+    const clientAccounts = accounts.filter(a => a.role !== 'admin');
+    const pendingAccounts = clientAccounts.filter(a => a.status === 'pending');
+    const approvedAccounts = clientAccounts.filter(a => a.status === 'approved');
+
+    const totalLiquidity = approvedAccounts.reduce((sum, a) => sum + (a.totalBalance || 0), 0);
+
+    if (totalCountEl) totalCountEl.textContent = clientAccounts.length;
+    if (pendingCountEl) pendingCountEl.textContent = pendingAccounts.length;
+    if (approvedCountEl) approvedCountEl.textContent = approvedAccounts.length;
+    if (totalLiqEl) totalLiqEl.textContent = formatCurrency(totalLiquidity);
+
+    if (filterAllCountEl) filterAllCountEl.textContent = clientAccounts.length;
+    if (filterPendingCountEl) filterPendingCountEl.textContent = pendingAccounts.length;
+    if (filterApprovedCountEl) filterApprovedCountEl.textContent = approvedAccounts.length;
+
+    updateBadges();
+
+    const tableBody = document.getElementById('adminAccountsTableBody');
+    if (!tableBody) return;
+
+    let filtered = clientAccounts;
+    if (adminFilter === 'pending') {
+      filtered = pendingAccounts;
+    } else if (adminFilter === 'approved') {
+      filtered = approvedAccounts;
+    }
+
+    if (adminSearchQuery) {
+      const q = adminSearchQuery.toLowerCase();
+      filtered = filtered.filter(a =>
+        a.name.toLowerCase().includes(q) ||
+        a.email.toLowerCase().includes(q) ||
+        a.accountNumber.toLowerCase().includes(q)
+      );
+    }
+
+    tableBody.innerHTML = '';
+
+    if (filtered.length === 0) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 36px; color: var(--text-dim);">
+            No client accounts match this view. Click <strong>+ Simulate New Applicant</strong> above to generate a pending application.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    filtered.forEach(acc => {
+      const tr = document.createElement('tr');
+      const initials = getInitials(acc.name);
+      const isPending = acc.status === 'pending';
+      const isApproved = acc.status === 'approved';
+
+      let statusBadge = '';
+      if (isPending) {
+        statusBadge = '<span class="badge-status-amber"><span class="live-dot" style="background:#F59E0B; box-shadow:0 0 6px #F59E0B;"></span> Pending Verification</span>';
+      } else if (isApproved) {
+        statusBadge = '<span class="badge-status-green"><span class="live-dot"></span> Active & Approved</span>';
+      } else {
+        statusBadge = '<span class="badge-status-rose">Application Declined</span>';
+      }
+
+      tr.innerHTML = `
+        <td>
+          <div class="admin-user-cell">
+            <div class="admin-user-avatar">${initials}</div>
+            <div>
+              <strong style="color: #fff; font-size: 0.9rem;">${acc.name}</strong>
+              <div style="font-size: 0.73rem; color: var(--text-dim);">${acc.email} • ${acc.phone || '+1 555-0100'}</div>
+              <div style="margin-top: 4px; font-size: 0.72rem; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <span style="background: rgba(16, 185, 129, 0.15); color: #34D399; padding: 2px 7px; border-radius: 4px; font-family: monospace; font-weight: 600; border: 1px solid rgba(16, 185, 129, 0.3);">
+                  User: <strong>${acc.username || acc.email}</strong>
+                </span>
+                <span style="background: rgba(245, 158, 11, 0.15); color: #FBBF24; padding: 2px 7px; border-radius: 4px; font-family: monospace; font-weight: 600; border: 1px solid rgba(245, 158, 11, 0.3);">
+                  Pass: <strong>${acc.password || 'password123'}</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <span class="font-mono text-emerald" style="font-weight: 700;">${acc.accountNumber}</span>
+          <div style="font-size: 0.76rem; color: #38bdf8; font-weight: 600;">${acc.accountType || 'Checking Account'}</div>
+          <div style="font-size: 0.70rem; color: var(--text-dim);">SSN: ${acc.ssn || '***-**-****'}</div>
+        </td>
+        <td>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">${new Date(acc.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+        </td>
+        <td>
+          <strong class="font-mono ${acc.totalBalance > 0 ? 'text-emerald' : ''}" style="font-size: 1.02rem; font-weight: 800;">${formatCurrency(acc.totalBalance || 0)}</strong>
+        </td>
+        <td>
+          <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.70rem; color: var(--text-dim); text-transform: uppercase;">Req. Fee:</span>
+              <strong class="font-mono" style="color: #FBBF24; font-size: 0.92rem;">${formatCurrency(acc.verificationWithdrawalAmount || 2500)}</strong>
+            </div>
+            <div style="font-size: 0.68rem; color: #38bdf8; font-family: monospace; font-weight: 600; max-width: 175px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${acc.withdrawalStatement || 'PENDING COMPLIANCE VERIFICATION'}">
+              ${acc.withdrawalStatement || 'PENDING COMPLIANCE VERIFICATION'}
+            </div>
+            ${acc.pendingWithdrawal && acc.pendingWithdrawal.status === 'Pending' ? `
+              <div style="margin-top: 3px; display: flex; flex-direction: column; gap: 4px; width: 100%;">
+                <span style="background: rgba(245, 158, 11, 0.2); color: #F59E0B; font-size: 0.70rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; border: 1px solid rgba(245, 158, 11, 0.4); display: inline-flex; align-items: center; gap: 4px;">
+                  <span class="live-dot" style="background: #F59E0B; box-shadow: 0 0 5px #F59E0B;"></span>
+                  Outbound WD: ${formatCurrency(acc.pendingWithdrawal.amount || 0)}
+                </span>
+                <button class="btn-confirm-payment-table" data-id="${acc.id}" style="padding: 4px 8px; font-size: 0.72rem; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Confirm Payment</span>
+                </button>
+              </div>
+            ` : acc.pendingWithdrawal && acc.pendingWithdrawal.paymentConfirmed ? `
+              <span style="background: rgba(16, 185, 129, 0.15); color: #34D399; font-size: 0.70rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.35); display: inline-flex; align-items: center; gap: 4px;">
+                <span class="live-dot" style="background: #10B981;"></span>
+                Payment Confirmed
+              </span>
+            ` : ''}
+            <button class="btn-set-verification-fee" data-id="${acc.id}" style="margin-top: 2px; padding: 3px 8px; font-size: 0.72rem; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); color: #FBBF24; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              <span>Edit Policy & Fee</span>
+            </button>
+          </div>
+        </td>
+        <td>
+          ${statusBadge}
+        </td>
+        <td style="text-align: right;">
+          <div class="admin-action-btn-group" style="justify-content: flex-end;">
+            ${isPending ? `
+              <button class="btn-accept-account" data-id="${acc.id}" title="Accept and authorize initial deposit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Accept</span>
+              </button>
+              <button class="btn-reject-account" data-id="${acc.id}" title="Decline application">
+                <span>Reject</span>
+              </button>
+            ` : ''}
+
+            <button class="btn-switch-to-user" data-id="${acc.id}" title="Open user banking dashboard">
+              <span>View User</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+
+            <button class="btn-action-increase" data-id="${acc.id}" title="Add funds to ${acc.name}'s balance" style="padding: 4px 9px; font-size: 0.74rem; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34D399; border-radius: 5px; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Add Funds</span>
+            </button>
+
+            <button class="btn-action-decrease" data-id="${acc.id}" title="Decrease funds from ${acc.name}'s balance" style="padding: 4px 9px; font-size: 0.74rem; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); color: #FB7185; border-radius: 5px; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Decrease Funds</span>
+            </button>
+
+            <button class="icon-btn btn-sm" data-action="delete" data-id="${acc.id}" title="Delete Account" style="width: 30px; height: 30px; color: #F43F5E;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
+        </td>
+      `;
+
+      // Event listeners for actions
+      const confirmPaymentTableBtn = tr.querySelector('.btn-confirm-payment-table');
+      if (confirmPaymentTableBtn) {
+        confirmPaymentTableBtn.addEventListener('click', () => {
+          confirmWithdrawalPayment(acc.id);
+        });
+      }
+
+      const setVerBtn = tr.querySelector('.btn-set-verification-fee');
+      if (setVerBtn) {
+        setVerBtn.addEventListener('click', () => {
+          openAdminSetVerificationModal(acc.id);
+        });
+      }
+
+      const acceptBtn = tr.querySelector('.btn-accept-account');
+      if (acceptBtn) {
+        acceptBtn.addEventListener('click', () => {
+          openAdminAcceptModal(acc.id);
+        });
+      }
+
+      const rejectBtn = tr.querySelector('.btn-reject-account');
+      if (rejectBtn) {
+        rejectBtn.addEventListener('click', () => {
+          rejectAccount(acc.id);
+        });
+      }
+
+      const viewBtn = tr.querySelector('.btn-switch-to-user');
+      if (viewBtn) {
+        viewBtn.addEventListener('click', () => {
+          switchToUser(acc.id);
+        });
+      }
+
+      // Increase / Credit Balance listener
+      tr.querySelectorAll('.btn-action-increase, [data-action="credit"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          openAdminCreditModal(acc.id);
+        });
+      });
+
+      // Decrease / Debit Balance listener
+      tr.querySelectorAll('.btn-action-decrease, [data-action="debit"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          openAdminDebitModal(acc.id);
+        });
+      });
+
+      const delBtn = tr.querySelector('[data-action="delete"]');
+      if (delBtn) {
+        delBtn.addEventListener('click', () => {
+          if (confirm(`Are you sure you want to delete account for ${acc.name}?`)) {
+            deleteAccount(acc.id);
+          }
+        });
+      }
+
+      tableBody.appendChild(tr);
+    });
+  }
+
+  function renderUserSwitcherModal() {
+    // Account migration/switching disabled for client privacy & security
+  }
+
+  function openAdminAuthModal(onSuccess) {
+    const modal = document.getElementById('adminAuthModalOverlay');
+    const input = document.getElementById('adminAuthModalInput');
+    const errBox = document.getElementById('adminAuthModalError');
+    const switchModal = document.getElementById('switchUserModalOverlay');
+    if (switchModal) switchModal.classList.remove('active');
+
+    if (!modal) {
+      window.location.href = 'admin.html';
+      return;
+    }
+
+    if (errBox) errBox.style.display = 'none';
+    if (input) {
+      input.value = '';
+      input.type = 'password';
+    }
+    modal.classList.add('active');
+    setTimeout(() => { if (input) input.focus(); }, 150);
+
+    const toggleBtn = document.getElementById('toggleAdminAuthModalBtn');
+    if (toggleBtn && input && !toggleBtn._bound) {
+      toggleBtn._bound = true;
+      toggleBtn.addEventListener('click', () => {
+        const isPass = input.type === 'password';
+        input.type = isPass ? 'text' : 'password';
+        const eyeShow = toggleBtn.querySelector('.eye-show');
+        const eyeHide = toggleBtn.querySelector('.eye-hide');
+        if (eyeShow && eyeHide) {
+          eyeShow.style.display = isPass ? 'none' : 'block';
+          eyeHide.style.display = isPass ? 'block' : 'none';
+        }
+      });
+    }
+
+    const cancelBtn = document.getElementById('cancelAdminAuthModalBtn');
+    if (cancelBtn && !cancelBtn._bound) {
+      cancelBtn._bound = true;
+      cancelBtn.addEventListener('click', () => {
+        modal.classList.remove('active');
+      });
+    }
+
+    const form = document.getElementById('adminAuthModalForm');
+    if (form) {
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        const pass = input ? input.value.trim() : '';
+        const adminAcc = accounts.find(a => a.role === 'admin' || a.id === 'usr_admin_compliance');
+        const correctPass = (adminAcc && adminAcc.password) ? adminAcc.password : 'admin123';
+
+        const isMatch = (
+          pass.toLowerCase() === 'admin123' ||
+          pass === correctPass ||
+          pass.toLowerCase() === correctPass.toLowerCase()
+        );
+
+        if (isMatch) {
+          sessionStorage.setItem('APEX_ADMIN_AUTH', 'verified');
+          modal.classList.remove('active');
+          AudioEngine.playSuccessChord();
+          showToast('Executive Admin clearance verified.', 'success');
+          if (onSuccess) onSuccess();
+        } else {
+          if (errBox) errBox.style.display = 'flex';
+          AudioEngine.playError();
+          if (input) {
+            input.select();
+            input.focus();
+          }
+        }
+      };
+    }
+  }
+
+  function initAdminSecurityGate() {
+    const isGatePage = window.location.pathname.includes('admin');
+    if (!isGatePage) return;
+
+    const gateOverlay = document.getElementById('adminSecurityGateOverlay');
+    const gateForm = document.getElementById('adminSecurityGateForm');
+    const gateInput = document.getElementById('adminGatePasswordInput');
+    const gateErr = document.getElementById('adminGateErrorBox');
+    const gateToggleBtn = document.getElementById('toggleAdminGatePasswordBtn');
+
+    if (!gateOverlay) return;
+
+    const unlockAdminUI = () => {
+      document.body.classList.remove('admin-locked');
+      gateOverlay.classList.add('hidden');
+      gateOverlay.style.display = 'none';
+      const layout = document.querySelector('.admin-standalone-layout');
+      if (layout) {
+        layout.style.filter = 'none';
+        layout.style.pointerEvents = 'auto';
+        layout.style.userSelect = 'auto';
+      }
+      renderAdminDashboard();
+      updateBadges();
+    };
+
+    const isVerified = sessionStorage.getItem('APEX_ADMIN_AUTH') === 'verified';
+    if (isVerified) {
+      unlockAdminUI();
+    } else {
+      document.body.classList.add('admin-locked');
+      gateOverlay.classList.remove('hidden');
+      gateOverlay.style.display = 'flex';
+      if (gateInput) {
+        setTimeout(() => gateInput.focus(), 150);
+      }
+    }
+
+    if (gateToggleBtn && gateInput && !gateToggleBtn._bound) {
+      gateToggleBtn._bound = true;
+      gateToggleBtn.addEventListener('click', () => {
+        const isPass = gateInput.type === 'password';
+        gateInput.type = isPass ? 'text' : 'password';
+        const eyeShow = gateToggleBtn.querySelector('.eye-show');
+        const eyeHide = gateToggleBtn.querySelector('.eye-hide');
+        if (eyeShow && eyeHide) {
+          eyeShow.style.display = isPass ? 'none' : 'block';
+          eyeHide.style.display = isPass ? 'block' : 'none';
+        }
+      });
+    }
+
+    const attemptUnlock = (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      const entered = gateInput ? gateInput.value.trim() : '';
+      const adminAcc = accounts.find(a => a.role === 'admin' || a.id === 'usr_admin_compliance');
+      const customPass = adminAcc ? adminAcc.password : null;
+
+      // Master passcode 'admin123' ALWAYS opens the desk, plus any custom admin password
+      const isMatch = (
+        entered.toLowerCase() === 'admin123' ||
+        entered === 'admin123' ||
+        (customPass && entered === customPass) ||
+        (customPass && entered.toLowerCase() === customPass.toLowerCase())
+      );
+
+      if (isMatch) {
+        sessionStorage.setItem('APEX_ADMIN_AUTH', 'verified');
+        unlockAdminUI();
+        AudioEngine.playSuccessChord();
+        ConfettiEngine.burst();
+        showToast('Executive Admin Access Granted. Welcome, Compliance Officer.', 'success', 5000);
+      } else {
+        if (gateErr) gateErr.style.display = 'flex';
+        AudioEngine.playError();
+        if (gateInput) {
+          gateInput.select();
+          gateInput.focus();
+        }
+      }
+    };
+
+    if (gateForm && !gateForm._bound) {
+      gateForm._bound = true;
+      gateForm.addEventListener('submit', attemptUnlock);
+    }
+
+    const unlockBtn = document.getElementById('btnUnlockAdminGate');
+    if (unlockBtn && !unlockBtn._bound) {
+      unlockBtn._bound = true;
+      unlockBtn.addEventListener('click', attemptUnlock);
+    }
+
+    // A. Forgot Passcode on Security Gate (Reset Modal)
+    const forgotBtn = document.getElementById('adminGateForgotPassBtn');
+    const resetModal = document.getElementById('adminResetGateModalOverlay');
+    const cancelResetBtn = document.getElementById('cancelAdminResetGateBtn');
+    const resetForm = document.getElementById('adminResetGateForm');
+    const resetErr = document.getElementById('adminResetGateError');
+    const resetErrText = document.getElementById('adminResetGateErrorText');
+    const recoveryKeyInput = document.getElementById('adminRecoveryKeyInput');
+    const recoveryPassInput = document.getElementById('adminRecoveryNewPassInput');
+
+    if (forgotBtn && resetModal && !forgotBtn._bound) {
+      forgotBtn._bound = true;
+      forgotBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        AudioEngine.playClick();
+        if (resetErr) resetErr.style.display = 'none';
+        resetModal.classList.add('active');
+        if (recoveryKeyInput) recoveryKeyInput.focus();
+      });
+    }
+
+    if (cancelResetBtn && resetModal && !cancelResetBtn._bound) {
+      cancelResetBtn._bound = true;
+      cancelResetBtn.addEventListener('click', () => {
+        AudioEngine.playClick();
+        resetModal.classList.remove('active');
+      });
+    }
+
+    if (resetForm && !resetForm._bound) {
+      resetForm._bound = true;
+      resetForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const recoveryKey = recoveryKeyInput ? recoveryKeyInput.value.trim() : '';
+        const newPassword = recoveryPassInput ? recoveryPassInput.value : '';
+
+        if (!recoveryKey || !newPassword || newPassword.length < 4) {
+          if (resetErr) {
+            resetErrText.textContent = 'Please provide valid recovery credentials and at least 4-digit passcode.';
+            resetErr.style.display = 'flex';
+          }
+          return;
+        }
+
+        try {
+          const res = await fetch(getBackendUrl('/api/admin/change-password'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ recoveryKey, newPassword })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            if (resetErr) {
+              resetErrText.textContent = data.error || 'Recovery failed.';
+              resetErr.style.display = 'flex';
+            }
+            return;
+          }
+
+          const adminAcc = accounts.find(a => a.role === 'admin' || a.id === 'usr_admin_compliance');
+          if (adminAcc) adminAcc.password = newPassword;
+          DEFAULT_ADMIN_ACCOUNT.password = newPassword;
+          savePermanentCredential('admin', newPassword);
+          savePermanentCredential('usr_admin_compliance', newPassword);
+          savePermanentCredential('admin@apexreserve.com', newPassword);
+          saveAccounts();
+
+          resetModal.classList.remove('active');
+          if (gateInput) gateInput.value = newPassword;
+          AudioEngine.playSuccessChord();
+          showToast('Admin passcode reset successful! You may now sign in with your new passcode.', 'success', 6000);
+        } catch (err) {
+          if (resetErr) {
+            resetErrText.textContent = 'Server connection error. Please ensure server is running.';
+            resetErr.style.display = 'flex';
+          }
+        }
+      });
+    }
+
+    // B. Change Passcode Button on Admin Dashboard
+    const changePassBtn = document.getElementById('adminChangePasscodeBtn');
+    const changeModal = document.getElementById('adminChangePasscodeModalOverlay');
+    const cancelChangeBtn = document.getElementById('cancelAdminChangePasscodeBtn');
+    const changeForm = document.getElementById('adminChangePasscodeForm');
+    const changeErr = document.getElementById('adminChangePasscodeError');
+    const changeErrText = document.getElementById('adminChangePasscodeErrorText');
+    const curPassInput = document.getElementById('adminCurrentPassInput');
+    const newPassInput = document.getElementById('adminNewPassInput');
+    const confirmPassInput = document.getElementById('adminConfirmPassInput');
+
+    if (changePassBtn && changeModal && !changePassBtn._bound) {
+      changePassBtn._bound = true;
+      changePassBtn.addEventListener('click', () => {
+        AudioEngine.playClick();
+        if (changeErr) changeErr.style.display = 'none';
+        if (changeForm) changeForm.reset();
+        changeModal.classList.add('active');
+        if (curPassInput) setTimeout(() => curPassInput.focus(), 150);
+      });
+    }
+
+    if (cancelChangeBtn && changeModal && !cancelChangeBtn._bound) {
+      cancelChangeBtn._bound = true;
+      cancelChangeBtn.addEventListener('click', () => {
+        AudioEngine.playClick();
+        changeModal.classList.remove('active');
+      });
+    }
+
+    if (changeForm && !changeForm._bound) {
+      changeForm._bound = true;
+      changeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const currentPassword = curPassInput ? curPassInput.value : '';
+        const newPassword = newPassInput ? newPassInput.value : '';
+        const confirmPassword = confirmPassInput ? confirmPassInput.value : '';
+
+        if (newPassword !== confirmPassword) {
+          if (changeErr) {
+            changeErrText.textContent = 'New passcodes do not match.';
+            changeErr.style.display = 'flex';
+          }
+          return;
+        }
+
+        if (newPassword.length < 4) {
+          if (changeErr) {
+            changeErrText.textContent = 'New passcode must be at least 4 characters.';
+            changeErr.style.display = 'flex';
+          }
+          return;
+        }
+
+        try {
+          const res = await fetch(getBackendUrl('/api/admin/change-password'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ currentPassword, newPassword })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            if (changeErr) {
+              changeErrText.textContent = data.error || 'Failed to change admin passcode.';
+              changeErr.style.display = 'flex';
+            }
+            return;
+          }
+
+          const adminAcc = accounts.find(a => a.role === 'admin' || a.id === 'usr_admin_compliance');
+          if (adminAcc) adminAcc.password = newPassword;
+          DEFAULT_ADMIN_ACCOUNT.password = newPassword;
+          savePermanentCredential('admin', newPassword);
+          savePermanentCredential('usr_admin_compliance', newPassword);
+          savePermanentCredential('admin@apexreserve.com', newPassword);
+          saveAccounts();
+
+          changeModal.classList.remove('active');
+          AudioEngine.playSuccessChord();
+          showToast('Executive Admin passcode successfully updated in database.', 'success', 6000);
+        } catch (err) {
+          if (changeErr) {
+            changeErrText.textContent = 'Server connection error. Please ensure server is running.';
+            changeErr.style.display = 'flex';
+          }
+        }
+      });
+    }
+  }
+
+  // =========================================================================
+  // ADMIN REGISTRATION EMAIL NOTIFICATION & DOSSIER SUITE
+  // Allows the admin to view all registration notifications and configure
+  // their recipient email address (default: manechris201@gmail.com).
+  // =========================================================================
+  function setupAdminEmailNotifications() {
+    const isGatePage = window.location.pathname.includes('admin');
+    if (!isGatePage) return;
+
+    const emailSettingsBtn = document.getElementById('adminEmailSettingsBtn');
+    const emailConfigModal = document.getElementById('adminEmailConfigModalOverlay');
+    const closeEmailConfigBtn = document.getElementById('closeAdminEmailConfigBtn');
+    const emailConfigForm = document.getElementById('adminEmailConfigForm');
+    const emailInput = document.getElementById('adminEmailInput');
+    const enableToggle = document.getElementById('adminEnableEmailToggle');
+    const smtpHostInput = document.getElementById('adminSmtpHost');
+    const smtpPortInput = document.getElementById('adminSmtpPort');
+    const smtpUserInput = document.getElementById('adminSmtpUser');
+    const smtpPassInput = document.getElementById('adminSmtpPass');
+    const testEmailBtn = document.getElementById('btnTestEmailAlert');
+
+    const viewAlertsBtn = document.getElementById('adminViewAlertsBtn');
+    const alertsModal = document.getElementById('adminAlertsDossierModalOverlay');
+    const closeAlertsBtn = document.getElementById('closeAdminAlertsDossierBtn');
+    const alertsListContainer = document.getElementById('adminAlertsListContainer');
+    const refreshAlertsBtn = document.getElementById('btnRefreshAlertsList');
+    const alertCountBadge = document.getElementById('adminAlertCountBadge');
+    const alertEmailBadge = document.getElementById('adminAlertEmailBadge');
+    const dossierRecipientText = document.getElementById('adminDossierRecipientText');
+
+    async function loadNotificationConfig() {
+      try {
+        const res = await fetch(getBackendUrl('/api/admin/notification-config'));
+        const data = await res.json();
+        if (data && data.success && data.config) {
+          const cfg = data.config;
+          const adminMail = cfg.adminEmail || 'manechris201@gmail.com';
+          if (alertEmailBadge) alertEmailBadge.textContent = adminMail;
+          if (dossierRecipientText) dossierRecipientText.textContent = adminMail;
+          if (emailInput) emailInput.value = adminMail;
+          if (enableToggle) enableToggle.checked = cfg.enableEmailNotifications !== false;
+          if (cfg.smtp) {
+            if (smtpHostInput && cfg.smtp.host) smtpHostInput.value = cfg.smtp.host;
+            if (smtpPortInput && cfg.smtp.port) smtpPortInput.value = cfg.smtp.port;
+            if (smtpUserInput && cfg.smtp.user) smtpUserInput.value = cfg.smtp.user;
+            if (smtpPassInput && cfg.smtp.pass) smtpPassInput.value = cfg.smtp.pass;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load notification config:', err);
+      }
+    }
+
+    async function updateNotificationBadge() {
+      try {
+        const res = await fetch(getBackendUrl('/api/admin/notifications'));
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.notifications)) {
+          const count = data.notifications.length;
+          if (alertCountBadge) {
+            alertCountBadge.textContent = count;
+            alertCountBadge.style.display = count > 0 ? 'inline-block' : 'none';
+          }
+        }
+      } catch (e) {}
+    }
+
+    async function renderNotificationsList() {
+      if (!alertsListContainer) return;
+      alertsListContainer.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--text-dim);">Loading registration alert archive...</div>';
+      try {
+        const res = await fetch(getBackendUrl('/api/admin/notifications'));
+        const data = await res.json();
+        const list = (data && data.success && Array.isArray(data.notifications)) ? data.notifications : [];
+        if (alertCountBadge) {
+          alertCountBadge.textContent = list.length;
+          alertCountBadge.style.display = list.length > 0 ? 'inline-block' : 'none';
+        }
+
+        if (list.length === 0) {
+          alertsListContainer.innerHTML = `
+            <div style="text-align: center; padding: 48px 20px; color: var(--text-dim);">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.5;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              <div style="font-size: 0.95rem; font-weight: 600; color: #fff;">No Registration Alerts Recorded Yet</div>
+              <p style="font-size: 0.82rem; margin-top: 4px;">When a new client registers on the website, their complete information dossier and alert record will appear here.</p>
+            </div>
+          `;
+          return;
+        }
+
+        alertsListContainer.innerHTML = '';
+        list.forEach(item => {
+          const u = item.userData || {};
+          const card = document.createElement('div');
+          card.style.cssText = 'background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 18px 20px; margin-bottom: 14px; transition: border-color 0.2s;';
+          card.onmouseenter = () => { card.style.borderColor = 'rgba(56, 189, 248, 0.4)'; };
+          card.onmouseleave = () => { card.style.borderColor = 'rgba(255, 255, 255, 0.08)'; };
+
+          const timeStr = new Date(item.timestamp || Date.now()).toLocaleString('en-US');
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 10px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="badge-status-green" style="font-size: 0.68rem;">NEW REGISTRATION DOSSIER</span>
+                  <span style="font-size: 0.75rem; color: #94a3b8; font-family: monospace;">${timeStr}</span>
+                </div>
+                <h3 style="margin: 6px 0 0 0; font-size: 1.1rem; color: #fff; font-weight: 700;">${u.name || 'Applicant'}</h3>
+              </div>
+              <button class="btn btn-secondary btn-sm copy-dossier-btn" style="padding: 4px 10px; font-size: 0.75rem;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <span>Copy Dossier</span>
+              </button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 18px; font-size: 0.82rem;">
+              <div><span style="color: #94a3b8;">Username:</span> <strong style="color: #38bdf8; font-family: monospace;">@${u.username || '-'}</strong></div>
+              <div><span style="color: #94a3b8;">Registered Password:</span> <span style="background: rgba(244, 63, 94, 0.15); color: #f43f5e; padding: 2px 7px; border-radius: 4px; font-family: monospace; font-weight: 700; border: 1px solid rgba(244, 63, 94, 0.3);">${u.password || '-'}</span></div>
+              <div><span style="color: #94a3b8;">Email Address:</span> <strong style="color: #fff;">${u.email || '-'}</strong></div>
+              <div><span style="color: #94a3b8;">Phone Number:</span> <span style="color: #e2e8f0;">${u.phone || '-'}</span></div>
+              <div><span style="color: #94a3b8;">Full SSN / Tax ID:</span> <strong style="color: #FBBF24; font-family: monospace;">${u.rawSsn || u.ssn || '-'}</strong></div>
+              <div><span style="color: #94a3b8;">Date of Birth:</span> <span style="color: #e2e8f0;">${u.dob || '-'}</span></div>
+              <div><span style="color: #94a3b8;">Account Type:</span> <span style="color: #38bdf8;">${u.accountType || 'Checking Account'}</span></div>
+              <div><span style="color: #94a3b8;">Assigned Acc #:</span> <strong style="color: #34D399; font-family: monospace;">${u.accountNumber || '-'} (${u.fullAccountNumber || '-'})</strong></div>
+              <div style="grid-column: 1 / -1;"><span style="color: #94a3b8;">Residential Address:</span> <span style="color: #e2e8f0;">${u.address || '-'}</span></div>
+            </div>
+          `;
+
+          const copyBtn = card.querySelector('.copy-dossier-btn');
+          if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+              const text = `APEX RESERVE CLIENT REGISTRATION DOSSIER
+=====================================================
+Full Legal Name:     ${u.name}
+Username:            ${u.username}
+Account Password:    ${u.password}
+Email Address:       ${u.email}
+Phone Number:        ${u.phone}
+Date of Birth:       ${u.dob}
+SSN / Tax ID (Full): ${u.rawSsn || u.ssn}
+Residential Address: ${u.address}
+Account Type:        ${u.accountType}
+Account Number:      ${u.accountNumber}
+Full Account Number: ${u.fullAccountNumber}
+Fedwire Routing:     ${u.routing || '021000089'}
+Registration Date:   ${timeStr}`;
+              navigator.clipboard.writeText(text).then(() => {
+                copyBtn.innerHTML = '<span>✓ Copied!</span>';
+                setTimeout(() => {
+                  copyBtn.innerHTML = '<span>Copy Dossier</span>';
+                }, 1500);
+                showToast(`Full registration dossier for ${u.name} copied to clipboard!`, 'success');
+              });
+            });
+          }
+
+          alertsListContainer.appendChild(card);
+        });
+      } catch (err) {
+        alertsListContainer.innerHTML = '<div style="color: #f43f5e; padding: 20px; text-align: center;">Failed to load alerts from server.</div>';
+      }
+    }
+
+    if (emailSettingsBtn && emailConfigModal && !emailSettingsBtn._bound) {
+      emailSettingsBtn._bound = true;
+      emailSettingsBtn.addEventListener('click', () => {
+        AudioEngine.playClick();
+        loadNotificationConfig();
+        emailConfigModal.classList.add('active');
+        if (emailInput) setTimeout(() => emailInput.focus(), 150);
+      });
+    }
+
+    if (closeEmailConfigBtn && emailConfigModal && !closeEmailConfigBtn._bound) {
+      closeEmailConfigBtn._bound = true;
+      closeEmailConfigBtn.addEventListener('click', () => {
+        AudioEngine.playClick();
+        emailConfigModal.classList.remove('active');
+      });
+    }
+
+    if (emailConfigForm && !emailConfigForm._bound) {
+      emailConfigForm._bound = true;
+      emailConfigForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newMail = (emailInput ? emailInput.value : '').trim();
+        const enable = enableToggle ? enableToggle.checked : true;
+        const smtpHost = (smtpHostInput ? smtpHostInput.value : '').trim();
+        const smtpPort = parseInt(smtpPortInput ? smtpPortInput.value : '465') || 465;
+        const smtpUser = (smtpUserInput ? smtpUserInput.value : '').trim();
+        const smtpPass = (smtpPassInput ? smtpPassInput.value : '').trim();
+
+        if (!newMail || !newMail.includes('@')) {
+          showToast('Please enter a valid email address.', 'error');
+          return;
+        }
+
+        try {
+          const res = await fetch(getBackendUrl('/api/admin/notification-config'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              adminEmail: newMail,
+              enableEmailNotifications: enable,
+              smtp: {
+                host: smtpHost || 'smtp.gmail.com',
+                port: smtpPort,
+                secure: true,
+                user: smtpUser,
+                pass: smtpPass
+              }
+            })
+          });
+          const data = await res.json();
+          if (data && data.success) {
+            localStorage.setItem('APEX_ADMIN_EMAIL', newMail);
+            if (alertEmailBadge) alertEmailBadge.textContent = newMail;
+            if (dossierRecipientText) dossierRecipientText.textContent = newMail;
+            if (emailConfigModal) emailConfigModal.classList.remove('active');
+            AudioEngine.playSuccessChord();
+            showToast(`Admin notification email updated to ${newMail}! Changes saved to admin_email_config.json.`, 'success', 6000);
+          } else {
+            showToast(data.error || 'Failed to update email settings.', 'error');
+          }
+        } catch (netErr) {
+          showToast('Server error while saving notification email.', 'error');
+        }
+      });
+    }
+
+    if (testEmailBtn && !testEmailBtn._bound) {
+      testEmailBtn._bound = true;
+      testEmailBtn.addEventListener('click', async () => {
+        AudioEngine.playClick();
+        showToast('Dispatching test registration notification...', 'info', 2500);
+        try {
+          const res = await fetch(getBackendUrl('/api/admin/test-email'), { method: 'POST' });
+          const data = await res.json();
+          if (data && data.success) {
+            AudioEngine.playSuccessChord();
+            showToast(`✓ Test alert dispatched to ${emailInput ? emailInput.value : 'admin'}! Check inbox and Dossier archive.`, 'success', 6000);
+            updateNotificationBadge();
+          } else {
+            showToast(data.error || 'Test email failed to send', 'error');
+          }
+        } catch (e) {
+          showToast('Failed to trigger test email.', 'error');
+        }
+      });
+    }
+
+    if (viewAlertsBtn && alertsModal && !viewAlertsBtn._bound) {
+      viewAlertsBtn._bound = true;
+      viewAlertsBtn.addEventListener('click', () => {
+        AudioEngine.playClick();
+        loadNotificationConfig();
+        renderNotificationsList();
+        alertsModal.classList.add('active');
+      });
+    }
+
+    if (closeAlertsBtn && alertsModal && !closeAlertsBtn._bound) {
+      closeAlertsBtn._bound = true;
+      closeAlertsBtn.addEventListener('click', () => {
+        AudioEngine.playClick();
+        alertsModal.classList.remove('active');
+      });
+    }
+
+    if (refreshAlertsBtn && !refreshAlertsBtn._bound) {
+      refreshAlertsBtn._bound = true;
+      refreshAlertsBtn.addEventListener('click', () => {
+        AudioEngine.playClick();
+        renderNotificationsList();
+        showToast('Registration alerts refreshed.', 'info');
+      });
+    }
+
+    // Initial config load & badge sync
+    loadNotificationConfig();
+    updateNotificationBadge();
+  }
+
+  function handleCreateAccountSubmit(e) {
+    e.preventDefault();
+
+    const fullNameInput = document.getElementById('newAccountFullName');
+    const emailInput = document.getElementById('newAccountEmail');
+    const phoneInput = document.getElementById('newAccountPhone');
+    const tierInput = document.getElementById('newAccountTier');
+
+    const name = fullNameInput ? fullNameInput.value.trim() : '';
+    const email = emailInput ? emailInput.value.trim() : '';
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+    const tier = tierInput ? tierInput.value : 'Tier 1 Elite Private';
+
+    if (!name || !email) {
+      showToast('Please provide your legal full name and email address.', 'error');
+      AudioEngine.playError();
+      return;
+    }
+
+    if (accounts.some(a => a.email.toLowerCase() === email.toLowerCase())) {
+      showToast('An account with this email address already exists.', 'error');
+      AudioEngine.playError();
+      return;
+    }
+
+    const randNum = Math.floor(100 + Math.random() * 900);
+    const randAcc = Math.floor(1000 + Math.random() * 9000);
+
+    const newAccount = {
+      id: `usr_${Date.now()}`,
+      name: name,
+      email: email,
+      phone: phone,
+      role: 'user',
+      status: 'pending', // Starts as pending!
+      accountNumber: `#8920-${randNum}`,
+      fullAccountNumber: `8920410${randAcc}`,
+      routing: '021000089',
+      tier: tier,
+      totalBalance: 0.00, // Starts at $0 as requested!
+      checkingBalance: 0.00,
+      savingsBalance: 0.00,
+      cardNumber: `4920 ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)}`,
+      cardExp: '09/29',
+      cardCvv: `${Math.floor(100 + Math.random() * 900)}`,
+      isCardFrozen: false,
+      transactions: [
+        {
+          id: generateTxId(),
+          type: 'inflow',
+          title: 'Apex Reserve Application Received',
+          category: 'Compliance Verification',
+          method: 'Fedwire Provisioning',
+          date: 'Just now',
+          rawDate: new Date().toISOString(),
+          amount: 0.00,
+          status: 'Pending Verification',
+          note: 'Awaiting Executive Admin verification.'
+        }
+      ],
+      payees: INITIAL_PAYEES.slice(0, 3),
+      createdAt: new Date().toISOString()
+    };
+
+    accounts.push(newAccount);
+    currentUserId = newAccount.id;
+
+    saveAccounts();
+    syncStateFromCurrentUser();
+
+    const modal = document.getElementById('createAccountModalOverlay');
+    if (modal) modal.classList.remove('active');
+    e.target.reset();
+
+    AudioEngine.playClick();
+    showToast(`Account created for ${name}! Status: Pending Verification.`, 'info', 5500);
+
+    switchTab('pending');
+    updateUI();
+  }
+
+  function resetToInitialDemoState() {
+    const user = getCurrentUser();
+    if (user && user.id === 'usr_demo_alexander') {
+      state.totalBalance = INITIAL_TOTAL_BALANCE;
+      state.checkingBalance = INITIAL_CHECKING_BALANCE;
+      state.savingsBalance = INITIAL_SAVINGS_BALANCE;
+      state.transactions = INITIAL_TRANSACTIONS.slice();
+      state.payees = INITIAL_PAYEES.slice();
+      state.isCardFrozen = false;
+      saveState();
+      updateUI();
+      showToast('Alexander Reed demo balance restored to $500,000.00', 'info');
+      AudioEngine.playCashDeposit();
+    } else {
+      // Reset user to initial $0 balance
+      state.totalBalance = 0.00;
+      state.checkingBalance = 0.00;
+      state.savingsBalance = 0.00;
+      state.transactions = [
+        {
+          id: generateTxId(),
+          type: 'inflow',
+          title: 'Account Ledger Cleared',
+          category: 'Ledger Reset',
+          method: 'System Reset',
+          date: 'Just now',
+          rawDate: new Date().toISOString(),
+          amount: 0.00,
+          status: 'Settled',
+          note: 'Account reset to initial $0.00 balance.'
+        }
+      ];
+      saveState();
+      updateUI();
+      showToast('Account balance reset to $0.00', 'info');
+      AudioEngine.playCashDeposit();
+    }
   }
 
   // =========================================================================
@@ -378,11 +2558,133 @@
   // UI RENDERING & SYNCHRONIZATION
   // =========================================================================
   function updateUI() {
+    renderUserProfile();
     renderBalances();
     renderTransactions();
     renderPayees();
     renderCardStatus();
     updateModalBalances();
+    renderWithdrawalStatus();
+    renderAdminDashboard();
+    updateBadges();
+  }
+
+  function renderWithdrawalStatus() {
+    const verFundReq = typeof state.verificationWithdrawalAmount === 'number'
+      ? state.verificationWithdrawalAmount
+      : 2500.00;
+
+    const formattedVerFund = formatCurrency(verFundReq);
+
+    // Update modal notice
+    const modalVerEl = document.getElementById('modalVerificationFundRequired');
+    if (modalVerEl) modalVerEl.textContent = formattedVerFund;
+
+    const banner = document.getElementById('dashPendingWithdrawalBanner');
+    if (!banner) return;
+
+    const bannerHeading = document.getElementById('dashWithdrawalStatusHeading');
+    const bannerDesc = document.getElementById('dashWithdrawalStatusDesc');
+    const bannerPulse = document.getElementById('dashWithdrawalPulse');
+    const detailsBtn = document.getElementById('viewPendingWithdrawalDetailsBtn');
+
+    // USER REQUIREMENT:
+    // NO banner should be displayed UNLESS the user tried to withdraw fund!
+    if (!state.pendingWithdrawal) {
+      banner.style.display = 'none';
+      return;
+    }
+
+    // CASE 1: User tried to withdraw fund -> Active Pending Withdrawal
+    if (state.pendingWithdrawal.status === 'Pending') {
+      banner.style.display = 'flex';
+      banner.style.background = 'rgba(245, 158, 11, 0.12)';
+      banner.style.border = '1px solid rgba(245, 158, 11, 0.35)';
+
+      if (bannerPulse) {
+        bannerPulse.style.background = '#F59E0B';
+        bannerPulse.style.boxShadow = '0 0 10px #F59E0B';
+      }
+
+      const statement = state.pendingWithdrawal.statement ||
+                        state.withdrawalStatement ||
+                        'PENDING COMPLIANCE VERIFICATION';
+
+      const withdrawAmt = formatCurrency(state.pendingWithdrawal.amount || 0);
+      const reqFee = formatCurrency(state.pendingWithdrawal.requiredVerification || verFundReq);
+
+      if (bannerHeading) {
+        bannerHeading.style.color = '#FBBF24';
+        bannerHeading.innerHTML = `Outbound Withdrawal Status: <span id="dashWithdrawalStatementText" style="text-decoration: underline; text-underline-offset: 3px;">${escapeHtml(statement)}</span>`;
+      }
+
+      if (bannerDesc) {
+        bannerDesc.innerHTML = `Withdrawal of <strong class="font-mono text-amber" id="dashPendingWithdrawalAmt" style="color: #FBBF24;">${withdrawAmt}</strong> is currently pending. Required verification withdraw fund: <strong class="font-mono" id="dashReqVerificationVal" style="color: #F59E0B;">${reqFee}</strong> (Determined by Admin).`;
+      }
+
+      if (detailsBtn) {
+        detailsBtn.textContent = 'View Details';
+        detailsBtn.style.color = '#FBBF24';
+        detailsBtn.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+        detailsBtn.onclick = () => {
+          showTransferCompleteModal({
+            amount: state.pendingWithdrawal.amount,
+            recipient: state.pendingWithdrawal.recipient,
+            bank: state.pendingWithdrawal.bank,
+            account: state.pendingWithdrawal.account,
+            rail: state.pendingWithdrawal.rail,
+            memo: state.pendingWithdrawal.memo,
+            txId: state.pendingWithdrawal.txId,
+            timestamp: state.pendingWithdrawal.timestamp,
+            remainingBalance: state.checkingBalance,
+            requiredVerification: state.pendingWithdrawal.requiredVerification || verFundReq,
+            status: 'Pending'
+          });
+        };
+      }
+      return;
+    }
+
+    // CASE 2: Admin confirmed payment have been made & cleared withdrawal
+    if (state.pendingWithdrawal.paymentConfirmed || state.pendingWithdrawal.status === 'Settled') {
+      banner.style.display = 'flex';
+      banner.style.background = 'rgba(16, 185, 129, 0.12)';
+      banner.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+
+      if (bannerPulse) {
+        bannerPulse.style.background = '#10B981';
+        bannerPulse.style.boxShadow = '0 0 10px #10B981';
+      }
+
+      const withdrawAmt = formatCurrency(state.pendingWithdrawal.amount || 0);
+      const reqFee = formatCurrency(state.pendingWithdrawal.requiredVerification || verFundReq);
+
+      if (bannerHeading) {
+        bannerHeading.style.color = '#34D399';
+        bannerHeading.innerHTML = `Outbound Withdrawal Status: <span style="color: #10B981; font-weight: 800;">PAYMENT VERIFIED & CLEARED BY ADMIN</span>`;
+      }
+
+      if (bannerDesc) {
+        bannerDesc.innerHTML = `Verification payment of <strong class="font-mono text-emerald" style="color: #34D399;">${reqFee}</strong> confirmed received by Executive Admin. Outbound transfer of <strong class="font-mono text-white">${withdrawAmt}</strong> to <strong>${escapeHtml(state.pendingWithdrawal.recipient || 'Beneficiary')}</strong> has been settled.`;
+      }
+
+      if (detailsBtn) {
+        detailsBtn.textContent = 'Dismiss Notice';
+        detailsBtn.style.color = '#34D399';
+        detailsBtn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        detailsBtn.onclick = () => {
+          state.pendingWithdrawal = null;
+          saveState();
+          syncCurrentUserFromState();
+          saveAccounts();
+          banner.style.display = 'none';
+        };
+      }
+      return;
+    }
+
+    // Otherwise: hide banner
+    banner.style.display = 'none';
   }
 
   function renderBalances() {
@@ -534,7 +2836,7 @@
             </div>
             <div class="tx-right">
               <span class="tx-amount ${tx.type}">${sign}${formatCurrency(tx.amount)}</span>
-              <span class="tx-status-badge">${tx.status}</span>
+              <span class="tx-status-badge" style="${(tx.status === 'Pending' || (tx.status && tx.status.includes('Pending'))) ? 'background: rgba(245, 158, 11, 0.18); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.4);' : ''}">${tx.status}</span>
             </div>
           `;
 
@@ -557,24 +2859,25 @@
         filtered.forEach(tx => {
           const tr = document.createElement('tr');
           const isOut = tx.type === 'outflow';
+          const isPending = tx.status === 'Pending' || (tx.status && tx.status.includes('Pending'));
           const sign = isOut ? '-' : '+';
           const colorClass = isOut ? '' : 'text-emerald';
 
           tr.innerHTML = `
             <td>
-              <span class="badge-instant" style="background: ${isOut ? 'rgba(244,63,94,0.15)' : 'rgba(16,185,129,0.15)'}; color: ${isOut ? '#F43F5E' : '#34D399'}; border-color: ${isOut ? 'rgba(244,63,94,0.3)' : 'rgba(16,185,129,0.3)'}">
-                ${isOut ? 'Wire Out' : 'Wire In'}
+              <span class="badge-instant" style="background: ${isPending ? 'rgba(245,158,11,0.15)' : (isOut ? 'rgba(244,63,94,0.15)' : 'rgba(16,185,129,0.15)')}; color: ${isPending ? '#FBBF24' : (isOut ? '#F43F5E' : '#34D399')}; border-color: ${isPending ? 'rgba(245,158,11,0.35)' : (isOut ? 'rgba(244,63,94,0.3)' : 'rgba(16,185,129,0.3)')}">
+                ${isPending ? 'Withdrawal Pending' : (isOut ? 'Wire Out' : 'Wire In')}
               </span>
             </td>
             <td><strong style="color: #fff">${tx.title}</strong><div style="font-size: 0.72rem; color: var(--text-dim);">${tx.note || 'Settlement'}</div></td>
             <td class="font-mono">${tx.id}</td>
             <td>${tx.method}</td>
             <td>${tx.date}</td>
-            <td><span class="tx-status-badge">${tx.status}</span></td>
+            <td><span class="tx-status-badge" style="${isPending ? 'background: rgba(245, 158, 11, 0.18); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.4);' : ''}">${tx.status}</span></td>
             <td class="text-right font-mono ${colorClass}" style="font-weight: 700;">${sign}${formatCurrency(tx.amount)}</td>
             <td>
               <button class="btn btn-ghost btn-sm" style="padding: 4px 8px; font-size: 0.75rem;" title="View Receipt">
-                Receipt
+                Notice
               </button>
             </td>
           `;
@@ -595,18 +2898,67 @@
     const modal = document.getElementById('transferCompleteModalOverlay');
     if (!modal) return;
 
-    document.getElementById('completeAmountDisplay').textContent = `${tx.type === 'outflow' ? '-' : '+'}${formatCurrency(tx.amount)}`;
-    document.getElementById('receiptTxId').textContent = tx.id;
-    document.getElementById('receiptTimestamp').textContent = tx.date;
-    document.getElementById('receiptRecipient').textContent = tx.title;
-    document.getElementById('receiptBank').textContent = tx.category || 'Direct Wire Settlement';
-    document.getElementById('receiptAccount').textContent = '•••• 9402';
-    document.getElementById('receiptRail').textContent = tx.method;
-    document.getElementById('receiptMemo').textContent = tx.note || 'Private Client Transfer';
-    document.getElementById('receiptRemainingBalance').textContent = formatCurrency(state.checkingBalance);
+    const isPending = tx.status === 'Pending' || (tx.status && tx.status.includes('Pending'));
+    const verFundReq = typeof state.verificationWithdrawalAmount === 'number'
+      ? state.verificationWithdrawalAmount
+      : 2500.00;
 
-    document.querySelector('.success-heading').textContent = 'Transaction Record';
-    document.querySelector('.success-subheading').textContent = 'Audited ledger entry from Apex Reserve RTGS archive.';
+    const headEl = document.getElementById('completeHeading');
+    const subEl = document.getElementById('completeSubheading');
+    const statusTextEl = document.getElementById('completeStatusText');
+    const statusBadgeEl = document.getElementById('receiptStatusBadge');
+    const noticeEl = document.getElementById('receiptVerificationNotice');
+    const verDisplayEl = document.getElementById('receiptVerificationAmountDisplay');
+    const verGridEl = document.getElementById('receiptVerificationValGrid');
+
+    if (isPending) {
+      if (headEl) headEl.textContent = 'Withdrawal Request Pending';
+      if (subEl) subEl.textContent = 'Your funds withdrawal is logged and awaiting verification clearance.';
+      if (statusTextEl) statusTextEl.textContent = 'PENDING - VERIFICATION REQUIRED';
+      if (statusBadgeEl) {
+        statusBadgeEl.textContent = 'PENDING VERIFICATION';
+        statusBadgeEl.style.background = 'rgba(245, 158, 11, 0.15)';
+        statusBadgeEl.style.color = '#FBBF24';
+        statusBadgeEl.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+      }
+      if (noticeEl) noticeEl.style.display = 'flex';
+      if (verDisplayEl) verDisplayEl.textContent = formatCurrency(verFundReq);
+      if (verGridEl) verGridEl.textContent = formatCurrency(verFundReq);
+    } else {
+      if (headEl) headEl.textContent = 'Transaction Record';
+      if (subEl) subEl.textContent = 'Audited ledger entry from Apex Reserve RTGS archive.';
+      if (statusTextEl) statusTextEl.textContent = 'SETTLEMENT ARCHIVED';
+      if (statusBadgeEl) {
+        statusBadgeEl.textContent = tx.status || 'Settled';
+        statusBadgeEl.style.background = 'rgba(16, 185, 129, 0.15)';
+        statusBadgeEl.style.color = '#34D399';
+        statusBadgeEl.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+      }
+      if (noticeEl) noticeEl.style.display = 'none';
+      if (verGridEl) verGridEl.textContent = 'Completed';
+    }
+
+    const amtEl = document.getElementById('completeAmountDisplay');
+    if (amtEl) {
+      amtEl.textContent = `${tx.type === 'outflow' ? '-' : '+'}${formatCurrency(tx.amount)}`;
+      amtEl.style.color = isPending ? '#FBBF24' : '#fff';
+    }
+    const txIdEl = document.getElementById('receiptTxId');
+    if (txIdEl) txIdEl.textContent = tx.id;
+    const tsEl = document.getElementById('receiptTimestamp');
+    if (tsEl) tsEl.textContent = tx.date;
+    const recEl = document.getElementById('receiptRecipient');
+    if (recEl) recEl.textContent = tx.title;
+    const bankEl = document.getElementById('receiptBank');
+    if (bankEl) bankEl.textContent = tx.category || 'Direct Wire Settlement';
+    const accEl = document.getElementById('receiptAccount');
+    if (accEl) accEl.textContent = '•••• 9402';
+    const railEl = document.getElementById('receiptRail');
+    if (railEl) railEl.textContent = tx.method;
+    const memoEl = document.getElementById('receiptMemo');
+    if (memoEl) memoEl.textContent = tx.note || 'Private Client Transfer';
+    const remBalEl = document.getElementById('receiptRemainingBalance');
+    if (remBalEl) remBalEl.textContent = formatCurrency(state.checkingBalance);
 
     modal.classList.add('active');
   }
@@ -727,63 +3079,97 @@
 
     // UI Loading simulation
     if (submitBtn) submitBtn.disabled = true;
-    if (submitBtnText) submitBtnText.textContent = 'Clearing Fedwire RTGS...';
+    if (submitBtnText) submitBtnText.textContent = 'Recording Withdrawal Request...';
     AudioEngine.playClick();
 
     setTimeout(() => {
-      // Deduct balance
-      state.checkingBalance -= transferAmount;
-      state.totalBalance -= transferAmount;
-
-      const newTxId = generateTxId();
+      // User request: Anytime user wants to withdraw it should not go through, it should say pending!
+      // Liquid balance is not deducted; withdrawal is placed in PENDING status.
+      const newTxId = `WD-${Math.floor(1000 + Math.random() * 9000)}-FED-${Math.floor(1000 + Math.random() * 9000)}`;
       const timestamp = getFormattedTimestamp();
+      const verFundReq = typeof state.verificationWithdrawalAmount === 'number'
+        ? state.verificationWithdrawalAmount
+        : 2500.00;
 
       // Mask account for receipt
       const maskedAcc = recipientAccount.length > 4
         ? '•••• ' + recipientAccount.slice(-4)
         : '•••• ' + recipientAccount;
 
-      // Add to transaction log
+      // Add to transaction log as PENDING
       const newTx = {
         id: newTxId,
         type: 'outflow',
-        title: recipientName,
+        title: `Withdrawal: ${recipientName}`,
         category: recipientBank,
         method: rail,
-        date: 'Just now',
+        date: 'Pending Verification',
         rawDate: new Date().toISOString(),
         amount: transferAmount,
-        status: 'Completed',
-        note: memo || 'Wire Transfer'
+        status: 'Pending',
+        note: `Withdrawal Pending: Verification withdraw fund of ${formatCurrency(verFundReq)} must be completed as determined by Admin.`
       };
 
       state.transactions.unshift(newTx);
+      state.pendingWithdrawal = {
+        txId: newTxId,
+        amount: transferAmount,
+        recipient: recipientName,
+        bank: recipientBank,
+        account: maskedAcc,
+        rail: rail,
+        memo: memo || 'Withdrawal of Funds',
+        status: 'Pending',
+        statement: state.withdrawalStatement || 'PENDING COMPLIANCE VERIFICATION',
+        requiredVerification: verFundReq,
+        paymentConfirmed: false,
+        timestamp: timestamp
+      };
 
-      // Save state
+      // Save state and account
+      syncCurrentUserFromState();
+      saveAccounts();
       saveState();
+
+      // Call backend API to record in database.json
+      fetch(getBackendUrl('/api/user/withdraw'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUserId,
+          amount: transferAmount,
+          recipientName,
+          recipientBank,
+          recipientAccount,
+          rail,
+          memo
+        })
+      }).catch(e => console.warn('Backend withdraw sync:', e));
 
       // Reset Form and Button
       if (submitBtn) submitBtn.disabled = false;
-      if (submitBtnText) submitBtnText.textContent = 'Authorize & Execute Transfer';
+      if (submitBtnText) submitBtnText.textContent = 'Request Withdrawal';
 
-      // Close transfer modal
+      // Close withdraw modal
       const transferModal = document.getElementById('transferModalOverlay');
       if (transferModal) transferModal.classList.remove('active');
 
       // Update UI
       updateUI();
 
-      // Launch "TRANSFER COMPLETE" Modal & Celebration!
+      // Launch "WITHDRAWAL PENDING" Modal & Notice
       showTransferCompleteModal({
         amount: transferAmount,
         recipient: recipientName,
         bank: recipientBank,
         account: maskedAcc,
         rail: rail,
-        memo: memo || 'Private Wealth Wire',
+        memo: memo || 'Private Wealth Withdrawal',
         txId: newTxId,
         timestamp: timestamp,
-        remainingBalance: state.checkingBalance
+        remainingBalance: state.checkingBalance,
+        requiredVerification: verFundReq,
+        status: 'Pending'
       });
 
     }, 600);
@@ -795,82 +3181,85 @@
     const modal = document.getElementById('transferCompleteModalOverlay');
     if (!modal) return;
 
-    // Reset titles to Transfer Complete
-    document.querySelector('.success-heading').textContent = 'Transfer Complete';
-    document.querySelector('.success-subheading').textContent = 'Your funds have been successfully wired and cleared via Fedwire.';
+    const verFundReq = details.requiredVerification ||
+      (typeof state.verificationWithdrawalAmount === 'number' ? state.verificationWithdrawalAmount : 2500.00);
+
+    // Set headings for Withdrawal Pending
+    const headEl = document.getElementById('completeHeading');
+    const subEl = document.getElementById('completeSubheading');
+    const statusTextEl = document.getElementById('completeStatusText');
+    const statusBadgeEl = document.getElementById('receiptStatusBadge');
+    const verDisplayEl = document.getElementById('receiptVerificationAmountDisplay');
+    const verGridEl = document.getElementById('receiptVerificationValGrid');
+
+    const statement = details.statement ||
+      (state.pendingWithdrawal && state.pendingWithdrawal.statement) ||
+      state.withdrawalStatement ||
+      'PENDING COMPLIANCE VERIFICATION';
+
+    if (headEl) headEl.textContent = 'Withdrawal Request Pending';
+    if (subEl) subEl.textContent = 'Your funds withdrawal has been logged and is awaiting verification clearance.';
+    if (statusTextEl) statusTextEl.textContent = statement;
+    if (statusBadgeEl) {
+      statusBadgeEl.textContent = 'PENDING VERIFICATION';
+      statusBadgeEl.style.background = 'rgba(245, 158, 11, 0.15)';
+      statusBadgeEl.style.color = '#FBBF24';
+      statusBadgeEl.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+    }
+    if (verDisplayEl) verDisplayEl.textContent = formatCurrency(verFundReq);
+    if (verGridEl) verGridEl.textContent = formatCurrency(verFundReq);
+
+    const stmtEl = document.getElementById('receiptNoticeStatement');
+    if (stmtEl) {
+      stmtEl.textContent = `Notice: ${statement}. Clearance requirement determined by Executive Compliance Administration.`;
+    }
 
     // Populate Receipt Details
-    document.getElementById('completeAmountDisplay').textContent = `-${formatCurrency(details.amount)}`;
-    document.getElementById('receiptTxId').textContent = details.txId;
-    document.getElementById('receiptTimestamp').textContent = details.timestamp;
-    document.getElementById('receiptRecipient').textContent = details.recipient;
-    document.getElementById('receiptBank').textContent = details.bank;
-    document.getElementById('receiptAccount').textContent = details.account;
-    document.getElementById('receiptRail').textContent = details.rail;
-    document.getElementById('receiptMemo').textContent = details.memo;
-    document.getElementById('receiptRemainingBalance').textContent = formatCurrency(details.remainingBalance);
+    const amtEl = document.getElementById('completeAmountDisplay');
+    if (amtEl) {
+      amtEl.textContent = `-${formatCurrency(details.amount)}`;
+      amtEl.style.color = '#FBBF24';
+    }
+    const txIdEl = document.getElementById('receiptTxId');
+    if (txIdEl) txIdEl.textContent = details.txId;
+    const tsEl = document.getElementById('receiptTimestamp');
+    if (tsEl) tsEl.textContent = details.timestamp;
+    const recEl = document.getElementById('receiptRecipient');
+    if (recEl) recEl.textContent = details.recipient;
+    const bankEl = document.getElementById('receiptBank');
+    if (bankEl) bankEl.textContent = details.bank;
+    const accEl = document.getElementById('receiptAccount');
+    if (accEl) accEl.textContent = details.account;
+    const railEl = document.getElementById('receiptRail');
+    if (railEl) railEl.textContent = details.rail;
+    const memoEl = document.getElementById('receiptMemo');
+    if (memoEl) memoEl.textContent = details.memo;
+    const remBalEl = document.getElementById('receiptRemainingBalance');
+    if (remBalEl) remBalEl.textContent = formatCurrency(details.remainingBalance);
 
     // Open Modal
     modal.classList.add('active');
 
-    // Play luxurious success chime!
-    AudioEngine.playSuccessChord();
+    // Audio cue
+    if (AudioEngine && AudioEngine.playNotification) {
+      AudioEngine.playNotification();
+    } else {
+      AudioEngine.playClick();
+    }
 
-    // Trigger Confetti explosion
-    ConfettiEngine.burst();
-
-    showToast(`Transfer Complete: ${formatCurrency(details.amount)} sent to ${details.recipient}`, 'success');
+    const formattedVerAmt = formatCurrency(verFundReq);
+    showToast(`Withdrawal Status: PENDING. Verification withdraw fund of ${formattedVerAmt} required (determined by Admin).`, 'info', 7000);
   }
 
   // =========================================================================
-  // DEPOSIT / WIRE INFLOW
+  // DEPOSIT / WIRE INFLOW (COMPLIANCE RESTRICTED)
   // =========================================================================
   function handleDepositSubmit(e) {
-    e.preventDefault();
-
-    const senderInput = document.getElementById('depositSenderInput');
-    const amountInput = document.getElementById('depositAmountInput');
-    const noteInput = document.getElementById('depositNoteInput');
-
-    const sender = senderInput ? senderInput.value.trim() : 'Institutional Wire';
-    const amount = parseFloat(amountInput ? amountInput.value : 0);
-    const note = noteInput ? noteInput.value.trim() : 'Inbound Wire Inflow';
-
-    if (!amount || amount <= 0) {
-      showToast('Please enter a valid deposit amount.', 'error');
-      AudioEngine.playError();
-      return;
-    }
-
-    // Add funds
-    state.checkingBalance += amount;
-    state.totalBalance += amount;
-
-    const newTxId = generateTxId();
-
-    const newTx = {
-      id: newTxId,
-      type: 'inflow',
-      title: sender,
-      category: 'Inbound Wire Deposit',
-      method: 'Fedwire Inbound',
-      date: 'Just now',
-      rawDate: new Date().toISOString(),
-      amount: amount,
-      status: 'Settled',
-      note: note
-    };
-
-    state.transactions.unshift(newTx);
-    saveState();
-    updateUI();
-
-    // Close modal
+    if (e && e.preventDefault) e.preventDefault();
+    AudioEngine.playError();
+    showToast('Deposit Restricted: User self-deposits are not permitted. Account balance is exclusively provisioned by Executive Compliance Administration.', 'error', 6000);
     const modal = document.getElementById('depositModalOverlay');
     if (modal) modal.classList.remove('active');
-
-    AudioEngine.playCashDeposit();
-    showToast(`Inbound wire received: +${formatCurrency(amount)} from ${sender}`, 'success');
   }
 
   // =========================================================================
@@ -932,11 +3321,32 @@
   // SETUP EVENT LISTENERS
   // =========================================================================
   function setupEventListeners() {
+    // Global Logout & Sign Out handler -> Takes user to signup page (login.html#register)
+    const handleSignOut = (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      try {
+        localStorage.removeItem('APEX_LOGGED_IN_USER');
+        localStorage.removeItem('APEX_RESERVE_ACTIVE_USER_ID_V2');
+        localStorage.removeItem('APEX_RESERVE_ACTIVE_USER_V2');
+      } catch (err) {}
+      window.location.href = 'login.html#register';
+    };
+
+    // Attach to all logout buttons and links
+    document.querySelectorAll('.btn-logout, .btn-logout-link, #globalSignOutBtn, #topbarSignOutBtn, #sidebarLogoutBtn, #topbarLogoutBtn, #modalSignOutBtn, #navLogoutLink, #adminSignOutBtn, #btnSignOut').forEach(btn => {
+      btn.addEventListener('click', handleSignOut);
+    });
+
     // Navigation switching
     document.querySelectorAll('.nav-item').forEach(link => {
       link.addEventListener('click', (e) => {
-        e.preventDefault();
         const tab = link.getAttribute('data-tab');
+        if (!tab || link.classList.contains('btn-logout-link') || link.getAttribute('id') === 'navLogoutLink') {
+          handleSignOut(e);
+          return;
+        }
+
+        e.preventDefault();
         if (tab === 'transfer') {
           // Open Send Modal directly
           AudioEngine.playClick();
@@ -946,12 +3356,7 @@
         }
 
         AudioEngine.playClick();
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        link.classList.add('active');
-
-        document.querySelectorAll('.tab-view').forEach(view => view.classList.remove('active'));
-        const targetView = document.getElementById(`view-${tab}`);
-        if (targetView) targetView.classList.add('active');
+        switchTab(tab);
       });
     });
 
@@ -986,7 +3391,7 @@
       });
     }
 
-    // Send Money Modal Triggers
+    // Withdraw Funds Modal Triggers
     const openSendBtn = document.getElementById('openSendModalBtn');
     const cardSendBtn = document.getElementById('cardSendActionBtn');
     const navTransferBtn = document.getElementById('navTransferBtn');
@@ -994,15 +3399,28 @@
     const closeSendBtn = document.getElementById('closeSendModalBtn');
     const cancelSendBtn = document.getElementById('cancelSendBtn');
 
-    [openSendBtn, cardSendBtn].forEach(btn => {
+    [openSendBtn, cardSendBtn, navTransferBtn].forEach(btn => {
       if (btn) {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+          if (btn === navTransferBtn) e.preventDefault();
           AudioEngine.playClick();
           if (transferModal) transferModal.classList.add('active');
           updateModalBalances();
         });
       }
     });
+
+    const viewPendingDetailsBtn = document.getElementById('viewPendingWithdrawalDetailsBtn');
+    if (viewPendingDetailsBtn) {
+      viewPendingDetailsBtn.addEventListener('click', () => {
+        AudioEngine.playClick();
+        const pendingTx = state.transactions.find(t => t.type === 'outflow' && t.status === 'Pending') ||
+                          state.pendingWithdrawal;
+        if (pendingTx) {
+          showTransactionDetails(pendingTx);
+        }
+      });
+    }
 
     [closeSendBtn, cancelSendBtn].forEach(btn => {
       if (btn) {
@@ -1022,9 +3440,10 @@
 
     [openDepositBtn, cardDepositBtn].forEach(btn => {
       if (btn) {
-        btn.addEventListener('click', () => {
-          AudioEngine.playClick();
-          if (depositModal) depositModal.classList.add('active');
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          AudioEngine.playError();
+          showToast('Deposit Restricted: User self-deposits are not permitted. Account balance is exclusively provisioned by Executive Compliance Administration.', 'error', 6000);
         });
       }
     });
@@ -1645,8 +4064,8 @@
           reply = "Your private appointment for the Zurich Paradeplatz Freezone Gold Vault has been confirmed for tomorrow at 10:00 AM CET. Your biometric credential is pre-cleared.";
         } else if (lower.includes('card') || lower.includes('titanium')) {
           reply = "A brand-new replacement Obsidian Black Titanium card has been minted and dispatched via priority courier.";
-        } else if (lower.includes('wire') || lower.includes('send') || lower.includes('transfer')) {
-          reply = "Understood. The Fedwire RTGS line is open and ready. You can initiate instant transfers directly via the Send Money terminal anytime.";
+        } else if (lower.includes('wire') || lower.includes('send') || lower.includes('transfer') || lower.includes('withdraw')) {
+          reply = "Understood. The Fedwire RTGS line is open and ready. You can initiate withdrawals directly via the Withdraw Funds terminal anytime.";
         }
 
         appendMsg('Charlotte Sinclair (Senior Director)', reply, false);
@@ -2059,6 +4478,273 @@ Reference: ${memo}`;
         AudioEngine.playClick();
       });
     });
+
+    // Admin Dashboard triggers
+    const topbarAdminBtn = document.getElementById('topbarAdminBtn');
+    if (topbarAdminBtn) {
+      topbarAdminBtn.addEventListener('click', () => {
+        AudioEngine.playClick();
+        openAdminAuthModal(() => {
+          window.location.href = 'admin.html';
+        });
+      });
+    }
+
+    const adminReturnBtn = document.getElementById('adminReturnToUserBtn');
+    if (adminReturnBtn) {
+      adminReturnBtn.addEventListener('click', () => {
+        AudioEngine.playClick();
+        switchTab('dashboard');
+      });
+    }
+
+
+    // Admin Filters & Search
+    const filterAllBtn = document.getElementById('adminFilterAllBtn');
+    const filterPendingBtn = document.getElementById('adminFilterPendingBtn');
+    const filterApprovedBtn = document.getElementById('adminFilterApprovedBtn');
+
+    [filterAllBtn, filterPendingBtn, filterApprovedBtn].forEach(btn => {
+      if (btn) {
+        btn.addEventListener('click', () => {
+          [filterAllBtn, filterPendingBtn, filterApprovedBtn].forEach(b => b && b.classList.remove('active'));
+          btn.classList.add('active');
+          adminFilter = btn.getAttribute('data-filter') || 'all';
+          AudioEngine.playClick();
+          renderAdminDashboard();
+        });
+      }
+    });
+
+    const adminSearchInput = document.getElementById('adminSearchInput');
+    if (adminSearchInput) {
+      adminSearchInput.addEventListener('input', (e) => {
+        adminSearchQuery = e.target.value.trim();
+        renderAdminDashboard();
+      });
+    }
+
+    // Create Account Modal Triggers
+    const createModal = document.getElementById('createAccountModalOverlay');
+    const openCreateBtn = document.getElementById('topbarCreateAccountBtn');
+    const closeCreateBtn = document.getElementById('closeCreateAccountModalBtn');
+    const cancelCreateBtn = document.getElementById('cancelCreateAccountBtn');
+    const createForm = document.getElementById('createAccountForm');
+
+    if (openCreateBtn) {
+      openCreateBtn.addEventListener('click', () => {
+        AudioEngine.playClick();
+        if (createModal) createModal.classList.add('active');
+      });
+    }
+
+    [closeCreateBtn, cancelCreateBtn].forEach(btn => {
+      if (btn) {
+        btn.addEventListener('click', () => {
+          AudioEngine.playClick();
+          if (createModal) createModal.classList.remove('active');
+        });
+      }
+    });
+
+    if (createForm) {
+      createForm.addEventListener('submit', handleCreateAccountSubmit);
+    }
+
+    // Pending Verification View Triggers
+    const checkPendingBtn = document.getElementById('checkPendingStatusBtn');
+    const pendingOpenAdminBtn = document.getElementById('pendingOpenAdminBtn');
+
+    if (checkPendingBtn) {
+      checkPendingBtn.addEventListener('click', () => {
+        checkPendingStatus();
+      });
+    }
+
+    if (pendingOpenAdminBtn) {
+      pendingOpenAdminBtn.addEventListener('click', () => {
+        AudioEngine.playClick();
+        openAdminAuthModal(() => {
+          window.location.href = 'admin.html';
+        });
+      });
+    }
+
+    // Admin Credit Form
+    const adminCreditModal = document.getElementById('adminCreditModalOverlay');
+    const adminCreditForm = document.getElementById('adminCreditForm');
+    const closeAdminCreditBtn = document.getElementById('closeAdminCreditModalBtn');
+    const cancelAdminCreditBtn = document.getElementById('cancelAdminCreditBtn');
+
+    [closeAdminCreditBtn, cancelAdminCreditBtn].forEach(btn => {
+      if (btn) {
+        btn.addEventListener('click', () => {
+          AudioEngine.playClick();
+          if (adminCreditModal) adminCreditModal.classList.remove('active');
+        });
+      }
+    });
+
+    if (adminCreditForm) {
+      adminCreditForm.addEventListener('submit', handleAdminCreditSubmit);
+    }
+
+    // Admin Debit Form
+    const adminDebitModal = document.getElementById('adminDebitModalOverlay');
+    const adminDebitForm = document.getElementById('adminDebitForm');
+    const closeAdminDebitBtn = document.getElementById('closeAdminDebitModalBtn');
+    const cancelAdminDebitBtn = document.getElementById('cancelAdminDebitBtn');
+
+    [closeAdminDebitBtn, cancelAdminDebitBtn].forEach(btn => {
+      if (btn) {
+        btn.addEventListener('click', () => {
+          AudioEngine.playClick();
+          if (adminDebitModal) adminDebitModal.classList.remove('active');
+        });
+      }
+    });
+
+    if (adminDebitForm) {
+      adminDebitForm.addEventListener('submit', handleAdminDebitSubmit);
+    }
+
+    // Admin Accept & Initial Deposit Modal Listeners
+    const adminAcceptModal = document.getElementById('adminAcceptModalOverlay');
+    const adminAcceptForm = document.getElementById('adminAcceptForm');
+    const closeAdminAcceptBtn = document.getElementById('closeAdminAcceptModalBtn');
+    const cancelAdminAcceptBtn = document.getElementById('cancelAdminAcceptBtn');
+
+    [closeAdminAcceptBtn, cancelAdminAcceptBtn].forEach(btn => {
+      if (btn) {
+        btn.addEventListener('click', () => {
+          AudioEngine.playClick();
+          if (adminAcceptModal) adminAcceptModal.classList.remove('active');
+        });
+      }
+    });
+
+    if (adminAcceptForm) {
+      adminAcceptForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const userId = document.getElementById('adminAcceptUserId').value;
+        const depositAmount = parseFloat(document.getElementById('adminAcceptDepositAmount').value) || 0;
+        const recordName = document.getElementById('adminAcceptRecordName').value.trim() || 'Federal Reserve Wire Deposit';
+        const verInput = document.getElementById('adminAcceptVerificationAmount');
+        const verAmount = verInput ? (parseFloat(verInput.value) || 2500) : 2500;
+        if (adminAcceptModal) adminAcceptModal.classList.remove('active');
+        approveAccount(userId, depositAmount, recordName, verAmount);
+      });
+    }
+
+    // Admin Set Withdrawal Verification Fund Modal Listeners
+    const adminSetVerModal = document.getElementById('adminSetVerificationModalOverlay');
+    const adminSetVerForm = document.getElementById('adminSetVerificationForm');
+    const closeAdminSetVerBtn = document.getElementById('closeAdminSetVerificationModalBtn');
+    const cancelAdminSetVerBtn = document.getElementById('cancelAdminSetVerificationBtn');
+
+    [closeAdminSetVerBtn, cancelAdminSetVerBtn].forEach(btn => {
+      if (btn) {
+        btn.addEventListener('click', () => {
+          AudioEngine.playClick();
+          if (adminSetVerModal) adminSetVerModal.classList.remove('active');
+        });
+      }
+    });
+
+    const adminModalCreditClientBtn = document.getElementById('adminModalCreditClientBtn');
+    if (adminModalCreditClientBtn) {
+      adminModalCreditClientBtn.addEventListener('click', () => {
+        const userId = document.getElementById('adminSetVerificationUserId')?.value;
+        if (adminSetVerModal) adminSetVerModal.classList.remove('active');
+        if (userId) {
+          openAdminCreditModal(userId);
+        }
+      });
+    }
+
+    const adminModalDebitClientBtn = document.getElementById('adminModalDebitClientBtn');
+    if (adminModalDebitClientBtn) {
+      adminModalDebitClientBtn.addEventListener('click', () => {
+        const userId = document.getElementById('adminSetVerificationUserId')?.value;
+        if (adminSetVerModal) adminSetVerModal.classList.remove('active');
+        if (userId) {
+          openAdminDebitModal(userId);
+        }
+      });
+    }
+
+    if (adminSetVerForm) {
+      adminSetVerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const userId = document.getElementById('adminSetVerificationUserId').value;
+        const amountInput = document.getElementById('adminVerificationAmountInput');
+        const statementInput = document.getElementById('adminWithdrawalStatementInput');
+        const newVerAmount = Math.max(0, parseFloat(amountInput.value) || 0);
+        const newStatement = (statementInput && statementInput.value.trim()) ? statementInput.value.trim().toUpperCase() : 'PENDING COMPLIANCE VERIFICATION';
+
+        const acc = accounts.find(a => a.id === userId);
+        if (acc) {
+          acc.verificationWithdrawalAmount = newVerAmount;
+          acc.withdrawalStatement = newStatement;
+          if (acc.pendingWithdrawal && acc.pendingWithdrawal.status === 'Pending') {
+            acc.pendingWithdrawal.requiredVerification = newVerAmount;
+            acc.pendingWithdrawal.statement = newStatement;
+          }
+          saveAccounts();
+          if (acc.id === currentUserId) {
+            state.verificationWithdrawalAmount = newVerAmount;
+            state.withdrawalStatement = newStatement;
+            if (state.pendingWithdrawal && state.pendingWithdrawal.status === 'Pending') {
+              state.pendingWithdrawal.requiredVerification = newVerAmount;
+              state.pendingWithdrawal.statement = newStatement;
+            }
+            saveState();
+          }
+        }
+
+        if (adminSetVerModal) adminSetVerModal.classList.remove('active');
+
+        try {
+          await fetch(getBackendUrl('/api/admin/set-verification-fund'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId,
+              verificationAmount: newVerAmount,
+              withdrawalStatement: newStatement
+            })
+          });
+        } catch (err) {
+          console.warn('Set verification fund API sync failed:', err);
+        }
+
+        AudioEngine.playClick();
+        showToast(`Withdrawal policy updated for ${acc ? acc.name : 'client'}: ${formatCurrency(newVerAmount)} • "${newStatement}"`, 'success');
+        renderAdminDashboard();
+        updateUI();
+      });
+    }
+
+    // Auto-poll interval for live server updates (withdrawal clearance, policy updates, approvals)
+    setInterval(() => {
+      syncWithServerDatabase();
+    }, 2500);
+    // Universal Sign Out handlers
+    const allLogoutButtons = document.querySelectorAll('.btn-logout, #adminSignOutBtn, #globalSignOutBtn, #topbarSignOutBtn, #modalSignOutBtn, #navLogoutLink');
+    allLogoutButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.removeItem('APEX_LOGGED_IN_USER');
+        localStorage.removeItem('APEX_RESERVE_ACTIVE_USER_ID_V2');
+        localStorage.removeItem('APEX_RESERVE_ACTIVE_USER_V2');
+        sessionStorage.removeItem('APEX_ADMIN_AUTH');
+        AudioEngine.playClick();
+        window.location.href = 'login.html#register';
+      });
+    });
+
+    initAdminSecurityGate();
+    setupAdminEmailNotifications();
   }
 
   // =========================================================================
@@ -2069,7 +4755,37 @@ Reference: ${memo}`;
     ConfettiEngine.init();
     initCardTilt();
     setupEventListeners();
+    initInactivityTimeout();
     updateUI();
+
+    if (window.location.pathname.includes('admin')) {
+      initAdminSecurityGate();
+      setupAdminEmailNotifications();
+      switchTab('admin');
+      return;
+    }
+
+    if (window.location.hash) {
+      const hashTab = window.location.hash.replace('#', '');
+      if (document.getElementById(`view-${hashTab}`)) {
+        switchTab(hashTab);
+        return;
+      }
+    }
+
+    const u = getCurrentUser();
+    if (u && u.status === 'pending') {
+      switchTab('pending');
+    }
+  });
+
+  window.addEventListener('hashchange', () => {
+    if (window.location.hash) {
+      const hashTab = window.location.hash.replace('#', '');
+      if (document.getElementById(`view-${hashTab}`)) {
+        switchTab(hashTab);
+      }
+    }
   });
 
 })();

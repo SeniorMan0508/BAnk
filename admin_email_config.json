@@ -1,0 +1,13 @@
+{
+  "adminEmail": "manechris201@gmail.com",
+  "enableEmailNotifications": true,
+  "smtp": {
+    "host": "smtp.gmail.com",
+    "port": 465,
+    "secure": true,
+    "user": "",
+    "pass": "",
+    "from": "Apex Reserve Bank <notifications@apexreserve.com>"
+  },
+  "webhookUrl": ""
+}

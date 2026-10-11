@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Reserve | Account Verification Pending</title>
+  <meta name="description" content="Your Apex Reserve account application is currently pending verification by the Executive Compliance Administration.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .pending-page-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      position: relative;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient background glow spheres -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Confetti canvas for celebrations -->
+  <canvas id="confettiCanvas"></canvas>
+
+  <!-- Notification Toast Container -->
+  <div class="toast-stack" id="toastStack"></div>
+
+  <div class="pending-page-container">
+    <div class="pending-view-card">
+      
+      <!-- Pending Animated Icon -->
+      <div class="pending-icon-wrap">
+        <div class="pending-pulse-ring"></div>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+
+      <div>
+        <span class="badge-status-amber" style="margin-bottom: 12px;">
+          <span class="live-dot" style="background: #F59E0B; box-shadow: 0 0 8px #F59E0B;"></span>
+          STATUS: PENDING VERIFICATION
+        </span>
+        <h1 class="pending-title">Account Application In Review</h1>
+        <p class="pending-subtitle">
+          Waiting for your information to be verified by the Admin. Once the Admin accepts your application in the Admin Dashboard, your account will open with your personal details and an initial balance of <strong>$0.00</strong>.
+        </p>
+      </div>
+
+      <!-- Applicant Credentials Box -->
+      <div class="pending-details-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">
+          <span style="font-size: 0.74rem; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em; font-weight: 700;">Submitted Application Record</span>
+          <span class="badge-status-cyan" id="pendingAppRef">APX-APP-VERIFIED</span>
+        </div>
+
+        <div class="pending-details-grid">
+          <div>
+            <span class="r-label">Full Legal Name</span>
+            <strong style="color: #fff; font-size: 0.95rem;" id="pendingName">Loading...</strong>
+          </div>
+          <div>
+            <span class="r-label">Username</span>
+            <span style="color: var(--text-muted); font-size: 0.85rem;" id="pendingUsername">---</span>
+          </div>
+          <div>
+            <span class="r-label">Account Type Selected</span>
+            <span class="text-cyan" style="font-weight: 600;" id="pendingAccountType">Checking Account</span>
+          </div>
+          <div>
+            <span class="r-label">Masked SSN / Tax ID</span>
+            <span class="font-mono text-emerald" style="font-weight: 700;" id="pendingSsn">***-**-****</span>
+          </div>
+          <div>
+            <span class="r-label">Assigned Account Number</span>
+            <span class="font-mono text-emerald" style="font-size: 0.95rem; font-weight: 700;" id="pendingAccNum">#8920-000</span>
+          </div>
+          <div>
+            <span class="r-label">Initial Starting Balance</span>
+            <span class="font-mono" style="font-size: 0.95rem; font-weight: 700; color: #fff;">$0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compliance Timeline -->
+      <div class="pending-timeline">
+        <div class="timeline-step">
+          <div class="timeline-dot done">✓</div>
+          <div class="timeline-step-text">
+            <div class="timeline-step-title">1. Registration & Identity Submitted</div>
+            <div class="timeline-step-desc">Full legal name, SSN, and chosen account type recorded</div>
+          </div>
+        </div>
+
+        <div class="timeline-step">
+          <div class="timeline-dot done">✓</div>
+          <div class="timeline-step-text">
+            <div class="timeline-step-title">2. Automated FinCEN / OFAC Clearance</div>
+            <div class="timeline-step-desc">Identity screening passed • Routing node pre-assigned</div>
+          </div>
+        </div>
+
+        <div class="timeline-step">
+          <div class="timeline-dot current">⏳</div>
+          <div class="timeline-step-text">
+            <div class="timeline-step-title" style="color: #F59E0B;">3. Admin Acceptance & Authorization</div>
+            <div class="timeline-step-desc">Waiting for Admin to click "Accept" in Admin Dashboard</div>
+          </div>
+        </div>
+
+        <div class="timeline-step">
+          <div class="timeline-dot waiting">4</div>
+          <div class="timeline-step-text">
+            <div class="timeline-step-title" style="color: var(--text-dim);">4. Active Account Opening</div>
+            <div class="timeline-step-desc">Unlocks full banking dashboard with your cards and $0.00 balance</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="pending-actions">
+        <button class="btn btn-primary" id="btnCheckStatus" style="width: 100%; justify-content: center; padding: 13px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          <span>Check Verification Status</span>
+        </button>
+
+        <div style="display: flex; gap: 12px; margin-top: 10px;">
+          <button class="btn btn-ghost" id="btnSignOut" style="justify-content: center; width: 100%;">
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function showToast(message, type = 'info', duration = 4000) {
+      const stack = document.getElementById('toastStack');
+      if (!stack) return;
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <div class="toast-indicator"></div>
+        <div class="toast-content">
+          <div class="toast-title">${type === 'success' ? 'Verification Clear' : 'System Notice'}</div>
+          <div class="toast-msg">${message}</div>
+        </div>
+      `;
+      stack.appendChild(toast);
+      setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease forwards';
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+
+    // Load logged in user details
+    let currentUser = null;
+    try {
+      const raw = localStorage.getItem('APEX_LOGGED_IN_USER');
+      if (raw) {
+        currentUser = JSON.parse(raw);
+      }
+    } catch (e) {}
+
+    if (!currentUser) {
+      // Redirect to login if not logged in
+      window.location.href = 'login.html';
+    } else {
+      document.getElementById('pendingName').textContent = currentUser.name || 'Client';
+      document.getElementById('pendingUsername').textContent = currentUser.username || 'client';
+      document.getElementById('pendingAccountType').textContent = currentUser.accountType || 'Checking Account';
+      document.getElementById('pendingSsn').textContent = currentUser.ssn || '***-**-****';
+      document.getElementById('pendingAccNum').textContent = currentUser.accountNumber || '#8920-000';
+      document.getElementById('pendingAppRef').textContent = `APX-APP-${(currentUser.fullAccountNumber || '89204').slice(-5)}`;
+    }
+
+    // Function to verify if admin has approved
+    async function checkApproval() {
+      if (!currentUser) return;
+      try {
+        const response = await fetch(`/api/user?id=${currentUser.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          const userInDb = data.user;
+
+          if (userInDb && userInDb.status === 'approved') {
+            // Updated to approved!
+            localStorage.setItem('APEX_LOGGED_IN_USER', JSON.stringify(userInDb));
+            localStorage.setItem('APEX_RESERVE_ACTIVE_USER_ID_V2', userInDb.id);
+            localStorage.setItem('APEX_RESERVE_ACTIVE_USER_V2', userInDb.id);
+
+            const balFormatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(userInDb.totalBalance || 0);
+            showToast(`Congratulations ${userInDb.name}! Your account has been ACCEPTED by the Admin. Starting balance: ${balFormatted}`, 'success', 5000);
+
+            setTimeout(() => {
+              window.location.href = 'index.html';
+            }, 1200);
+            return true;
+          }
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    document.getElementById('btnCheckStatus').addEventListener('click', async () => {
+      const approved = await checkApproval();
+      if (!approved) {
+        showToast('Your application is still Pending verification by the Admin.', 'info', 3000);
+      }
+    });
+
+    document.getElementById('btnSignOut').addEventListener('click', () => {
+      localStorage.removeItem('APEX_LOGGED_IN_USER');
+      localStorage.removeItem('APEX_RESERVE_ACTIVE_USER_ID_V2');
+      localStorage.removeItem('APEX_RESERVE_ACTIVE_USER_V2');
+      window.location.href = 'login.html#register';
+    });
+
+    // Auto-poll every 2 seconds
+    setInterval(checkApproval, 2000);
+  </script>
+</body>
+</html>

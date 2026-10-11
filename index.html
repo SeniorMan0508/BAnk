@@ -49,8 +49,8 @@
         </a>
         <a href="#transfer" class="nav-item" data-tab="transfer" id="navTransferBtn">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
-          <span>Send Money</span>
-          <span class="badge-instant">Instant</span>
+          <span>Withdraw Funds</span>
+          <span class="badge-instant" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; border-color: rgba(245, 158, 11, 0.3);">Verified</span>
         </a>
         <a href="#transactions" class="nav-item" data-tab="transactions">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -89,15 +89,19 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           <span>Security & Controls</span>
         </a>
+        <a href="login.html#register" class="nav-item btn-logout-link" id="navLogoutLink" style="color: #f43f5e; margin-top: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Log Out</span>
+        </a>
       </nav>
 
       <!-- Account tier card -->
       <div class="tier-card">
         <div class="tier-header">
-          <div class="tier-pill">Tier 1 Elite</div>
+          <div class="tier-pill" id="sidebarTierPill">Tier 1 Elite</div>
           <span class="tier-status">FDIC Insured</span>
         </div>
-        <p class="tier-desc">Wire limit: $10,000,000 / day</p>
+        <p class="tier-desc" id="sidebarTierDesc">Wire limit: $10,000,000 / day</p>
         <div class="tier-progress-bg">
           <div class="tier-progress-fill" style="width: 100%"></div>
         </div>
@@ -107,16 +111,24 @@
         </button>
       </div>
 
-      <!-- User Profile snippet -->
-      <div class="sidebar-user">
+      <!-- User Profile snippet (Read-only) -->
+      <div class="sidebar-user" id="sidebarUserBox">
         <div class="user-avatar-wrap">
-          <div class="user-avatar">AR</div>
-          <div class="online-indicator"></div>
+          <div class="user-avatar" id="sidebarUserAvatar">AR</div>
+          <div class="online-indicator" id="sidebarOnlineIndicator"></div>
         </div>
-        <div class="user-details">
-          <span class="user-name">Alexander Reed</span>
-          <span class="user-acc">Private Acc: #8920-410</span>
+        <div class="user-details" style="flex: 1; min-width: 0;">
+          <span class="user-name" id="sidebarUserName" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Alexander Reed</span>
+          <span class="user-acc" id="sidebarUserAcc">Private Acc: #8920-410</span>
         </div>
+      </div>
+
+      <!-- Explicit Global Log Out in Sidebar -->
+      <div style="padding: 6px 16px 14px 16px;">
+        <button class="btn btn-logout" id="globalSignOutBtn" style="width: 100%; justify-content: center;" title="Log Out to Sign Up Page">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Log Out</span>
+        </button>
       </div>
     </aside>
 
@@ -135,31 +147,149 @@
             <svg id="soundIconOn" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
           </button>
 
-          <!-- Quick Send Action Button -->
+          <!-- Quick Withdraw Action Button -->
           <button class="btn btn-primary" id="openSendModalBtn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
-            <span>Send Money</span>
+            <span>Withdraw Funds</span>
           </button>
 
-          <!-- Deposit Button -->
-          <button class="btn btn-secondary" id="openDepositModalBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14"/><path d="m5 12 7-7 7 7"/></svg>
-            <span>Deposit Funds</span>
-          </button>
 
-          <div class="user-pill">
-            <span class="live-dot"></span>
-            <span>Fedwire Live</span>
-          </div>
+          <!-- Log Out in Topbar -->
+          <button class="btn btn-logout" id="topbarSignOutBtn" title="Log Out to Sign Up Page">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Log Out</span>
+          </button>
         </div>
       </header>
 
       <!-- Dynamic Views Container -->
       <div class="content-container">
 
+        <!-- ============================================== -->
+        <!-- TAB: PENDING VERIFICATION VIEW                 -->
+        <!-- ============================================== -->
+        <section id="view-pending" class="tab-view">
+          <div class="pending-view-wrapper">
+            <div class="pending-view-card">
+              <!-- Pending Icon with Pulsing Halo -->
+              <div class="pending-icon-wrap">
+                <div class="pending-pulse-ring"></div>
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+
+              <div>
+                <span class="badge-status-amber" style="margin-bottom: 12px;">
+                  <span class="live-dot" style="background: #F59E0B; box-shadow: 0 0 8px #F59E0B;"></span>
+                  STATUS: PENDING VERIFICATION
+                </span>
+                <h2 class="pending-title">Account Application In Review</h2>
+                <p class="pending-subtitle">
+                  Waiting for your information to be verified by the Apex Reserve Compliance Administration. Your Federal Reserve RTGS settlement ledger is awaiting final executive authorization.
+                </p>
+              </div>
+
+              <!-- Applicant Details Box -->
+              <div class="pending-details-box">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">
+                  <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em; font-weight: 700;">Client Application Credentials</span>
+                  <span class="badge-status-cyan" id="pendingAppRefId">APX-APP-89204</span>
+                </div>
+
+                <div class="pending-details-grid">
+                  <div>
+                    <span class="r-label">Applicant Name</span>
+                    <strong style="color: #fff; font-size: 0.95rem;" id="pendingApplicantName">John Doe</strong>
+                  </div>
+                  <div>
+                    <span class="r-label">Email Address</span>
+                    <span style="color: var(--text-muted); font-size: 0.85rem;" id="pendingApplicantEmail">john@example.com</span>
+                  </div>
+                  <div>
+                    <span class="r-label">Assigned Account Number</span>
+                    <span class="font-mono text-emerald" style="font-size: 0.95rem; font-weight: 700;" id="pendingApplicantAcc">#8920-582</span>
+                  </div>
+                  <div>
+                    <span class="r-label">Initial Liquid Balance</span>
+                    <span class="font-mono" style="font-size: 0.95rem; font-weight: 700; color: #fff;" id="pendingApplicantBalance">$0.00</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Compliance Review Timeline -->
+              <div class="pending-timeline">
+                <div class="timeline-step">
+                  <div class="timeline-dot done">✓</div>
+                  <div class="timeline-step-text">
+                    <div class="timeline-step-title">1. Account Application & Profile Submitted</div>
+                    <div class="timeline-step-desc">Personal credentials and contact record digitally recorded</div>
+                  </div>
+                </div>
+
+                <div class="timeline-step">
+                  <div class="timeline-dot done">✓</div>
+                  <div class="timeline-step-text">
+                    <div class="timeline-step-title">2. Automated FinCEN / OFAC Clearance</div>
+                    <div class="timeline-step-desc">Anti-money laundering and cryptographic key check passed</div>
+                  </div>
+                </div>
+
+                <div class="timeline-step">
+                  <div class="timeline-dot current">⏳</div>
+                  <div class="timeline-step-text">
+                    <div class="timeline-step-title" style="color: #F59E0B;">3. Executive Admin Verification & Acceptance</div>
+                    <div class="timeline-step-desc">Waiting for Admin to click "Accept" in the Admin Dashboard</div>
+                  </div>
+                </div>
+
+                <div class="timeline-step">
+                  <div class="timeline-dot waiting">4</div>
+                  <div class="timeline-step-text">
+                    <div class="timeline-step-title" style="color: var(--text-dim);">4. Fedwire RTGS Ledger Unlocked</div>
+                    <div class="timeline-step-desc">Live banking dashboard opens with your name, info, and $0 starting balance</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pending Actions -->
+              <div class="pending-actions">
+                <button class="btn btn-primary" id="checkPendingStatusBtn" style="width: 100%; justify-content: center;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                  <span>Check Verification Status</span>
+                </button>
+
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                  <button class="btn btn-ghost btn-logout" id="pendingLogoutBtn" style="justify-content: center; width: 100%;">
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
         <!-- TAB: DASHBOARD -->
         <section id="view-dashboard" class="tab-view active">
           
+          <!-- Outbound Withdrawal Status Banner (Active ONLY When User Withdraws Funds) -->
+          <div class="pending-withdrawal-banner" id="dashPendingWithdrawalBanner" style="display: none; margin-bottom: 24px; padding: 16px 20px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: var(--radius-md); justify-content: space-between; align-items: center; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <span class="pulse-indicator" id="dashWithdrawalPulse" style="background: #F59E0B; width: 12px; height: 12px; flex-shrink: 0;"></span>
+              <div>
+                <div style="font-size: 0.9rem; font-weight: 700; color: #FBBF24;" id="dashWithdrawalStatusHeading">Outbound Withdrawal Status: <span id="dashWithdrawalStatementText">PENDING COMPLIANCE VERIFICATION</span></div>
+                <div style="font-size: 0.82rem; color: #e2e8f0; margin-top: 2px;" id="dashWithdrawalStatusDesc">
+                  Withdrawal of <strong class="font-mono" id="dashPendingWithdrawalAmt">$0.00</strong> is currently pending. Required verification withdraw fund: <strong class="font-mono text-amber" id="dashReqVerificationVal" style="color: #F59E0B;">$2,500.00</strong> (Determined by Admin).
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button class="btn btn-secondary btn-sm" id="viewPendingWithdrawalDetailsBtn" style="flex-shrink: 0; border-color: rgba(245, 158, 11, 0.4); color: #FBBF24;">View Details</button>
+            </div>
+          </div>
+
           <!-- Hero Wealth Overview Grid -->
           <div class="wealth-overview-grid">
             
@@ -184,7 +314,7 @@
               <!-- Available and breakdown bars -->
               <div class="balance-meta-row">
                 <div class="meta-item">
-                  <span class="meta-label">Available for Immediate Transfer</span>
+                  <span class="meta-label">Available for Withdrawal</span>
                   <span class="meta-value text-emerald" id="displayAvailableBalance">$500,000.00</span>
                 </div>
                 <div class="meta-item">
@@ -226,12 +356,9 @@
               <div class="balance-actions-row">
                 <button class="btn btn-primary" id="cardSendActionBtn">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
-                  Transfer Funds
+                  Withdraw Funds
                 </button>
-                <button class="btn btn-secondary" id="cardDepositActionBtn">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14"/><path d="m5 12 7-7 7 7"/></svg>
-                  Add Wire Inflow
-                </button>
+
                 <button class="btn btn-ghost" id="viewStatementBtn">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                   Download Statement
@@ -269,7 +396,7 @@
                   <div class="card-bottom-row">
                     <div class="card-holder-info">
                       <span class="card-meta-label">CARDHOLDER</span>
-                      <span class="card-holder-name">ALEXANDER REED</span>
+                      <span class="card-holder-name" id="cardHolderNameDisplay">ALEXANDER REED</span>
                     </div>
                     <div class="card-exp-info">
                       <span class="card-meta-label">EXPIRES</span>
@@ -515,7 +642,7 @@
             </div>
 
             <!-- Built-In FX Swap Calculator Desk -->
-            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 22px;">
+            <div style="background: #ffffff05; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 22px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <span class="section-subtitle">INSTANT MID-MARKET FX CONVERTER</span>
                 <span style="font-size: 0.75rem; color: var(--emerald-light); font-weight: 700;">Zero Markup • Real-Time Interbank Rate</span>
@@ -790,16 +917,16 @@
               <div class="receipt-field">
                 <span class="r-label">Beneficiary Account Number</span>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span class="r-val font-mono" style="color: #fff; font-weight: 800;">89204109402</span>
-                  <button class="btn-text-small copy-field-btn" data-copy="89204109402">Copy</button>
+                  <span class="r-val font-mono" id="beneficiaryAccountVal" style="color: #fff; font-weight: 800;">89204109402</span>
+                  <button class="btn-text-small copy-field-btn" id="copyBeneficiaryAccBtn" data-copy="89204109402">Copy</button>
                 </div>
               </div>
 
               <div class="receipt-field">
                 <span class="r-label">Beneficiary Full Name</span>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span class="r-val" style="color: #fff; font-weight: 700;">Alexander Reed</span>
-                  <button class="btn-text-small copy-field-btn" data-copy="Alexander Reed">Copy</button>
+                  <span class="r-val" id="beneficiaryNameVal" style="color: #fff; font-weight: 700;">Alexander Reed</span>
+                  <button class="btn-text-small copy-field-btn" id="copyBeneficiaryNameBtn" data-copy="Alexander Reed">Copy</button>
                 </div>
               </div>
 
@@ -879,9 +1006,9 @@
             <div class="card-management-box glass-panel">
               <div class="card-preview-art black-art">
                 <span class="card-art-type">APEX BLACK TITANIUM</span>
-                <span class="card-art-num">•••• •••• •••• 7721</span>
+                <span class="card-art-num" id="secondaryCardNumDisplay">•••• •••• •••• 7721</span>
                 <div class="card-art-bottom">
-                  <span>ALEXANDER REED</span>
+                  <span id="secondaryCardHolderDisplay">ALEXANDER REED</span>
                   <span>EXP 09/29</span>
                 </div>
               </div>
@@ -1642,18 +1769,18 @@
   </div>
 
   <!-- ============================================== -->
-  <!-- MODAL: SEND MONEY / WIRE TRANSFER MODAL         -->
+  <!-- MODAL: WITHDRAW FUNDS / WIRE MODAL              -->
   <!-- ============================================== -->
   <div class="modal-overlay" id="transferModalOverlay">
     <div class="modal-card modal-send">
       <div class="modal-header">
         <div class="modal-header-text">
-          <div class="modal-pill">
-            <span class="pulse-indicator"></span>
-            <span>Fedwire Real-Time Gross Settlement</span>
+          <div class="modal-pill" style="border-color: rgba(245, 158, 11, 0.4); color: #F59E0B;">
+            <span class="pulse-indicator" style="background: #F59E0B;"></span>
+            <span>Federal Reserve Wire Withdrawal</span>
           </div>
-          <h2 class="modal-title">Initiate Money Transfer</h2>
-          <p class="modal-desc">Send funds instantly with zero transfer fees for Apex Reserve accounts.</p>
+          <h2 class="modal-title">Withdraw Funds</h2>
+          <p class="modal-desc">Initiate funds withdrawal to your designated bank account.</p>
         </div>
         <button class="modal-close-btn" id="closeSendModalBtn" title="Close">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
@@ -1661,11 +1788,10 @@
       </div>
 
       <form id="transferForm" class="modal-body">
-        
         <!-- Source Account Box -->
         <div class="transfer-source-box">
           <div class="source-info">
-            <span class="field-label">Transferring From</span>
+            <span class="field-label">Withdrawing From</span>
             <div class="source-acc-name">Apex Primary Private Reserve (•• 9402)</div>
           </div>
           <div class="source-balance-badge">
@@ -1738,10 +1864,10 @@
           </div>
         </div>
 
-        <!-- Transfer Amount Section -->
+        <!-- Withdrawal Amount Section -->
         <div class="form-group amount-group">
           <div class="amount-label-row">
-            <label class="field-label" for="transferAmountInput">Transfer Amount (USD) *</label>
+            <label class="field-label" for="transferAmountInput">Withdrawal Amount (USD) *</label>
             <span class="amount-helper" id="amountErrorMsg"></span>
           </div>
           <div class="amount-input-wrapper">
@@ -1755,7 +1881,7 @@
             <button type="button" class="amount-chip" data-add="5000">+$5,000</button>
             <button type="button" class="amount-chip" data-add="25000">+$25,000</button>
             <button type="button" class="amount-chip" data-add="100000">+$100,000</button>
-            <button type="button" class="amount-chip chip-max" id="maxAmountBtn">Send Full Balance</button>
+            <button type="button" class="amount-chip chip-max" id="maxAmountBtn">Withdraw Full Balance</button>
           </div>
         </div>
 
@@ -1768,7 +1894,7 @@
         <!-- Transfer Summary Preview Box -->
         <div class="transfer-preview-box">
           <div class="preview-row">
-            <span>Transfer Amount:</span>
+            <span>Withdrawal Amount:</span>
             <span id="previewTransferAmount">$0.00</span>
           </div>
           <div class="preview-row">
@@ -1776,7 +1902,7 @@
             <span class="text-emerald">FREE (Apex Reserve)</span>
           </div>
           <div class="preview-row total-row">
-            <span>New Balance After Transfer:</span>
+            <span>Remaining Balance:</span>
             <span class="preview-new-bal" id="previewRemainingBalance">$500,000.00</span>
           </div>
         </div>
@@ -1784,9 +1910,9 @@
         <!-- Submit Button with Biometric / Security Feel -->
         <div class="modal-footer-actions">
           <button type="button" class="btn btn-ghost" id="cancelSendBtn">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-submit-transfer" id="submitTransferBtn">
+          <button type="submit" class="btn btn-primary btn-submit-transfer" id="submitTransferBtn" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
-            <span id="submitBtnText">Authorize & Execute Transfer</span>
+            <span id="submitBtnText">Request Withdrawal</span>
           </button>
         </div>
 
@@ -1795,34 +1921,46 @@
   </div>
 
   <!-- ============================================== -->
-  <!-- MODAL: TRANSFER COMPLETE (SUCCESS CELEBRATION) -->
+  <!-- MODAL: WITHDRAWAL PENDING / VERIFICATION MODAL -->
   <!-- ============================================== -->
   <div class="modal-overlay" id="transferCompleteModalOverlay">
-    <div class="modal-card modal-success">
+    <div class="modal-card modal-success" style="border-color: rgba(245, 158, 11, 0.4); box-shadow: 0 25px 70px rgba(0,0,0,0.85), 0 0 50px rgba(245, 158, 11, 0.18);">
       <div class="success-banner">
         
-        <!-- Big Animated Checkmark Icon -->
-        <div class="success-icon-wrapper">
-          <div class="success-pulse-ring"></div>
-          <div class="success-icon-circle">
-            <svg class="checkmark-svg" viewBox="0 0 52 52">
-              <circle class="checkmark-circle" cx="26" cy="26" r="24" fill="none"/>
-              <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+        <!-- Big Animated Pending Hourglass/Clock Icon -->
+        <div class="success-icon-wrapper" style="border-color: rgba(245, 158, 11, 0.35);">
+          <div class="success-pulse-ring" style="background: rgba(245, 158, 11, 0.3);"></div>
+          <div class="success-icon-circle" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); box-shadow: 0 0 35px rgba(245, 158, 11, 0.5);">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
             </svg>
           </div>
         </div>
 
         <div class="success-titles">
-          <div class="status-chip-complete">
-            <span class="chip-dot"></span>
-            <span>SETTLEMENT CONFIRMED</span>
+          <div class="status-chip-complete" id="receiptStatusChip" style="background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.35);">
+            <span class="chip-dot" style="background: #F59E0B; box-shadow: 0 0 6px #F59E0B;"></span>
+            <span id="completeStatusText">PENDING - VERIFICATION REQUIRED</span>
           </div>
-          <h2 class="success-heading">Transfer Complete</h2>
-          <p class="success-subheading">Your funds have been successfully wired and cleared via Fedwire.</p>
+          <h2 class="success-heading" id="completeHeading">Withdrawal Request Pending</h2>
+          <p class="success-subheading" id="completeSubheading">Your withdrawal has been registered and is pending verification clearance.</p>
         </div>
 
-        <div class="success-amount-display" id="completeAmountDisplay">
+        <div class="success-amount-display" id="completeAmountDisplay" style="color: #FBBF24;">
           -$50,000.00
+        </div>
+
+        <!-- Verification Notice Box inside receipt -->
+        <div id="receiptVerificationNotice" style="margin: 16px 28px 0 28px; padding: 14px 18px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 12px; text-align: left; display: flex; gap: 14px; align-items: flex-start;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2.2" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div>
+            <div style="font-size: 0.86rem; font-weight: 700; color: #FBBF24; margin-bottom: 3px;">Mandatory Account Verification Requirement</div>
+            <div style="font-size: 0.8rem; color: #e2e8f0; line-height: 1.5;">
+              A verification withdraw fund of <strong style="color: #F59E0B; font-size: 0.95rem; font-family: monospace;" id="receiptVerificationAmountDisplay">$2,500.00</strong> must be completed before this withdrawal can be released to your external account.
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 4px;">Clearance requirement determined by Executive Compliance Administration.</div>
+          </div>
         </div>
       </div>
 
@@ -1834,8 +1972,8 @@
               <span class="receipt-bank-title">APEX RESERVE BANK</span>
               <span class="receipt-bank-sub">FEDERAL RESERVE RTGS PARTICIPANT</span>
             </div>
-            <div class="receipt-status-badge">
-              PAID & CLEARED
+            <div class="receipt-status-badge" id="receiptStatusBadge" style="background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.35);">
+              PENDING VERIFICATION
             </div>
           </div>
 
@@ -1843,19 +1981,19 @@
 
           <div class="receipt-data-grid">
             <div class="receipt-field">
-              <span class="r-label">Transfer Reference ID</span>
-              <span class="r-val font-mono" id="receiptTxId">TX-8942-FED-9941</span>
+              <span class="r-label">Withdrawal Reference ID</span>
+              <span class="r-val font-mono" id="receiptTxId">WD-8942-PENDING</span>
             </div>
             <div class="receipt-field">
-              <span class="r-label">Execution Timestamp</span>
-              <span class="r-val" id="receiptTimestamp">Sep 24, 2026 • 16:49:12 EST</span>
+              <span class="r-label">Request Timestamp</span>
+              <span class="r-val" id="receiptTimestamp">Oct 11, 2026 • 03:20:12 EST</span>
             </div>
             <div class="receipt-field">
               <span class="r-label">Beneficiary</span>
               <span class="r-val" id="receiptRecipient">Elena Rostova</span>
             </div>
             <div class="receipt-field">
-              <span class="r-label">Beneficiary Bank</span>
+              <span class="r-label">Receiving Bank</span>
               <span class="r-val" id="receiptBank">JPMorgan Chase Private</span>
             </div>
             <div class="receipt-field">
@@ -1867,12 +2005,12 @@
               <span class="r-val" id="receiptRail">Fedwire Instant</span>
             </div>
             <div class="receipt-field">
-              <span class="r-label">Memo / Description</span>
-              <span class="r-val" id="receiptMemo">Asset Acquisition</span>
+              <span class="r-label">Required Verification Fund</span>
+              <span class="r-val font-mono" id="receiptVerificationValGrid" style="color: #FBBF24; font-weight: 700;">$2,500.00</span>
             </div>
             <div class="receipt-field">
-              <span class="r-label">Network Transfer Fee</span>
-              <span class="r-val text-emerald">$0.00 (Waived)</span>
+              <span class="r-label">Withdrawal Clearance Fee</span>
+              <span class="r-val text-emerald">$0.00 (Standard)</span>
             </div>
           </div>
 
@@ -1880,12 +2018,12 @@
 
           <div class="receipt-footer-row">
             <div>
-              <span class="r-label">Remaining Liquid Balance:</span>
-              <strong class="r-balance text-emerald" id="receiptRemainingBalance">$450,000.00</strong>
+              <span class="r-label">Account Balance:</span>
+              <strong class="r-balance text-emerald" id="receiptRemainingBalance">$100,000.00</strong>
             </div>
             <div class="security-seal">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <span>Cryptographically Signed</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span style="color: #FBBF24;">Compliance Logged</span>
             </div>
           </div>
         </div>
@@ -1895,11 +2033,11 @@
       <div class="success-actions">
         <button class="btn btn-secondary" id="printReceiptBtn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
-          <span>Print / Save Receipt</span>
+          <span>Print / Save Notice</span>
         </button>
         <button class="btn btn-secondary" id="sendAnotherTransferBtn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
-          <span>Send Another Transfer</span>
+          <span>Withdraw Another Amount</span>
         </button>
         <button class="btn btn-primary" id="returnDashboardBtn">
           <span>Return to Dashboard</span>
@@ -2028,10 +2166,125 @@
     </div>
   </div>
 
+
+
+  <!-- ============================================== -->
+  <!-- MODAL: ADMIN ACCESS PASSCODE VERIFICATION      -->
+  <!-- ============================================== -->
+  <div class="modal-overlay" id="adminAuthModalOverlay" style="z-index: 10050;">
+    <div class="modal-card" style="max-width: 460px; border: 1px solid rgba(245, 158, 11, 0.4); box-shadow: 0 25px 70px rgba(0,0,0,0.85), 0 0 50px rgba(245, 158, 11, 0.18); background: rgba(14, 18, 27, 0.96); border-radius: 20px;">
+      <div class="modal-header" style="flex-direction: column; align-items: center; text-align: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 20px;">
+        <div style="width: 56px; height: 56px; margin: 0 auto 12px auto; border-radius: 50%; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.45); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 24px rgba(245, 158, 11, 0.25);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <div class="badge-status-amber" style="margin-bottom: 8px;">
+          <span class="live-dot" style="background: #F59E0B; box-shadow: 0 0 8px #F59E0B;"></span>
+          EXECUTIVE ADMIN VERIFICATION
+        </div>
+        <h2 class="modal-title" style="font-size: 1.45rem; color: #fff;">Admin Passcode Required</h2>
+        <p class="modal-desc" style="font-size: 0.82rem; color: var(--text-dim); margin-top: 4px;">
+          Please enter the Executive Administrator security passcode to access the Admin Compliance Dashboard.
+        </p>
+      </div>
+
+      <div id="adminAuthModalError" style="display: none; margin: 16px 24px 0 24px; padding: 10px 14px; background: rgba(244, 63, 94, 0.14); border: 1px solid rgba(244, 63, 94, 0.4); border-radius: 8px; color: #f43f5e; font-size: 0.84rem; font-weight: 600; align-items: center; gap: 8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>Incorrect admin passcode. Access denied.</span>
+      </div>
+
+      <form id="adminAuthModalForm" class="modal-body" style="padding: 24px;">
+        <div class="form-group">
+          <label class="field-label" for="adminAuthModalInput" style="color: #38bdf8; font-weight: 700; font-size: 0.85rem;">
+            Admin Security Passcode *
+          </label>
+          <div class="password-input-wrap" style="position: relative; display: flex; align-items: center;">
+            <input type="password" id="adminAuthModalInput" class="form-control font-mono" placeholder="Enter admin password" required autocomplete="current-password" autofocus style="padding-right: 44px; height: 46px;">
+            <button type="button" class="btn-toggle-password" id="toggleAdminAuthModalBtn" title="Toggle password visibility" style="position: absolute; right: 10px; background: none; border: none; color: #94a3b8; cursor: pointer; padding: 6px;">
+              <svg class="eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              <svg class="eye-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+            </button>
+          </div>
+          <span style="font-size: 0.72rem; color: var(--text-dim); margin-top: 5px; display: block;">Authorized admin credential: <code>admin123</code></span>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+          <button type="button" class="btn btn-ghost" id="cancelAdminAuthModalBtn" style="flex: 1; justify-content: center; height: 44px;">
+            <span>Cancel</span>
+          </button>
+          <button type="submit" class="btn btn-primary" style="flex: 1.5; justify-content: center; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); height: 44px; font-weight: 700;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <span>Verify & Access Admin</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: ADMIN CREDIT / FUND ACCOUNT MODAL       -->
+  <!-- ============================================== -->
+  <div class="modal-overlay" id="adminCreditModalOverlay">
+    <div class="modal-card modal-deposit" style="max-width: 480px;">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <div class="modal-pill">
+            <span class="pulse-indicator"></span>
+            <span>Executive Liquidity Grant</span>
+          </div>
+          <h2 class="modal-title">Credit Client Balance</h2>
+          <p class="modal-desc" id="adminCreditModalDesc">Inject liquidity directly into client reserve account.</p>
+        </div>
+        <button class="modal-close-btn" id="closeAdminCreditModalBtn" title="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form id="adminCreditForm" class="modal-body">
+        <input type="hidden" id="adminCreditUserId">
+        <div class="form-group amount-group">
+          <label class="field-label" for="adminCreditAmountInput">Credit Amount (USD) *</label>
+          <div class="amount-input-wrapper">
+            <span class="currency-symbol">$</span>
+            <input type="number" id="adminCreditAmountInput" class="amount-input" placeholder="0.00" step="0.01" min="1" value="10000" required>
+          </div>
+          <div class="amount-chips-row">
+            <button type="button" class="amount-chip" onclick="document.getElementById('adminCreditAmountInput').value = '5000'">+$5,000</button>
+            <button type="button" class="amount-chip" onclick="document.getElementById('adminCreditAmountInput').value = '25000'">+$25,000</button>
+            <button type="button" class="amount-chip" onclick="document.getElementById('adminCreditAmountInput').value = '100000'">+$100,000</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label" for="adminCreditMemoInput">Credit Grant Memo</label>
+          <input type="text" id="adminCreditMemoInput" class="form-control" value="Executive Welcome Grant / Initial Liquidity">
+        </div>
+
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-ghost" id="cancelAdminCreditBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="m5 12 7-7 7 7"/></svg>
+            <span>Authorize & Credit Account</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Notification Toast Container -->
   <div class="toast-stack" id="toastStack"></div>
 
+  <!-- Compatibility placeholders for removed switcher/migration elements -->
+  <div style="display:none;" aria-hidden="true">
+    <div id="topbarUserAvatar"></div>
+    <div id="topbarUserName"></div>
+    <div id="topbarUserStatus"></div>
+    <div id="accountSelectorList"></div>
+  </div>
+
   <!-- JavaScript Application Logic -->
-  <script src="app.js"></script>
+  <script src="app.js?v=20261011"></script>
 </body>
 </html>
