@@ -766,14 +766,16 @@
           if (idx === -1) {
             merged.push(su);
           } else {
-            // Local client state is authoritative (preserves approved status, deposits, custom passwords)
+            // Server approval takes precedence over pending local state, and credited balance from admin is adopted
+            const isApproved = su.status === 'approved' || merged[idx].status === 'approved';
+            const serverHasCredit = typeof su.totalBalance === 'number' && su.totalBalance > 0 && (merged[idx].totalBalance === 0 || merged[idx].totalBalance === undefined);
             merged[idx] = {
               ...su,
               ...merged[idx],
-              status: merged[idx].status || su.status,
-              checkingBalance: merged[idx].checkingBalance !== undefined ? merged[idx].checkingBalance : su.checkingBalance,
-              savingsBalance: merged[idx].savingsBalance !== undefined ? merged[idx].savingsBalance : su.savingsBalance,
-              totalBalance: merged[idx].totalBalance !== undefined ? merged[idx].totalBalance : su.totalBalance,
+              status: isApproved ? 'approved' : (merged[idx].status || su.status),
+              checkingBalance: serverHasCredit ? su.checkingBalance : (merged[idx].checkingBalance !== undefined ? merged[idx].checkingBalance : su.checkingBalance),
+              savingsBalance: serverHasCredit ? su.savingsBalance : (merged[idx].savingsBalance !== undefined ? merged[idx].savingsBalance : su.savingsBalance),
+              totalBalance: serverHasCredit ? su.totalBalance : (merged[idx].totalBalance !== undefined ? merged[idx].totalBalance : su.totalBalance),
               transactions: (merged[idx].transactions && merged[idx].transactions.length > 0) ? merged[idx].transactions : (su.transactions || [])
             };
           }
