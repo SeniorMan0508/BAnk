@@ -859,6 +859,9 @@
         if (sessionUser && currentUserId) {
           const active = accounts.find(a => a.id === currentUserId);
           if (active) {
+            if (sessionUser.status === 'approved') {
+              active.status = 'approved';
+            }
             localStorage.setItem('APEX_LOGGED_IN_USER', JSON.stringify(active));
             const isIndexPage = !window.location.pathname.includes('admin') &&
                                 !window.location.pathname.includes('login') &&

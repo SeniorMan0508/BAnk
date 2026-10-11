@@ -194,12 +194,25 @@
       localStorage.setItem('APEX_RESERVE_ACTIVE_USER_ID_V2', userObj.id);
       localStorage.setItem('APEX_RESERVE_ACTIVE_USER_V2', userObj.id);
 
+      // Synchronize local accounts ledger so index.html does not bounce back to pending
+      try {
+        const localRaw = localStorage.getItem('APEX_RESERVE_ACCOUNTS_V2');
+        let accs = localRaw ? JSON.parse(localRaw) : [];
+        const idx = accs.findIndex(a => a.id === userObj.id || (a.username && userObj.username && a.username.toLowerCase() === userObj.username.toLowerCase()));
+        if (idx !== -1) {
+          accs[idx] = { ...accs[idx], ...userObj, status: 'approved' };
+        } else {
+          accs.push(userObj);
+        }
+        localStorage.setItem('APEX_RESERVE_ACCOUNTS_V2', JSON.stringify(accs));
+      } catch (eAcc) {}
+
       const balFormatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(userObj.totalBalance || 0);
       showToast(`Congratulations ${userObj.name}! Your account has been ACCEPTED by the Bank. Starting balance: ${balFormatted}`, 'success', 5000);
 
       setTimeout(() => {
         window.location.href = 'index.html';
-      }, 1200);
+      }, 1000);
     }
 
     async function checkApproval() {
@@ -218,20 +231,27 @@
         }
       } catch (eLocal) {}
 
-      // 2. Check server API if reachable
+      // 2. Check server API directly with cache-busting & no-store headers
       try {
         const cloudBackend = localStorage.getItem('APEX_CLOUD_BACKEND_URL') || 'https://bank-m0ot.onrender.com';
-        let endpoint = null;
+        let baseUrl = '';
         if (window.location.hostname && (window.location.hostname.includes('onrender.com') || window.location.port === '8080' || window.location.port === '10000')) {
-          endpoint = `/api/user?id=${encodeURIComponent(currentUser.id)}`;
+          baseUrl = '';
         } else if (cloudBackend && cloudBackend.startsWith('http')) {
-          endpoint = cloudBackend.replace(/\/+$/, '') + `/api/user?id=${encodeURIComponent(currentUser.id)}`;
+          baseUrl = cloudBackend.replace(/\/+$/, '');
         } else if (window.location.hostname === 'localhost') {
-          endpoint = `http://localhost:8080/api/user?id=${encodeURIComponent(currentUser.id)}`;
+          baseUrl = 'http://localhost:8080';
         }
 
-        if (endpoint) {
-          const response = await fetch(endpoint);
+        const qId = encodeURIComponent(currentUser.id || '');
+        const qUser = encodeURIComponent(currentUser.username || '');
+        const endpoint = `${baseUrl}/api/user?id=${qId}&username=${qUser}&_t=${Date.now()}`;
+
+        const response = await fetch(endpoint, {
+          cache: 'no-store',
+          headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+        });
+
         if (response.ok) {
           const data = await response.json();
           const userInDb = data.user;
@@ -242,9 +262,39 @@
         }
       } catch (eApi) {}
 
-      // 3. Fallback to repository database.json
+      // 2b. Fallback: check full cloud users list
       try {
-        const res = await fetch('database.json?v=' + Date.now());
+        const cloudBackend = localStorage.getItem('APEX_CLOUD_BACKEND_URL') || 'https://bank-m0ot.onrender.com';
+        let baseUrl = '';
+        if (window.location.hostname && (window.location.hostname.includes('onrender.com') || window.location.port === '8080' || window.location.port === '10000')) {
+          baseUrl = '';
+        } else if (cloudBackend && cloudBackend.startsWith('http')) {
+          baseUrl = cloudBackend.replace(/\/+$/, '');
+        }
+
+        const resUsers = await fetch(`${baseUrl}/api/users?_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+        });
+
+        if (resUsers.ok) {
+          const d = await resUsers.json();
+          if (d && Array.isArray(d.users)) {
+            const foundUser = d.users.find(u =>
+              (currentUser.id && u.id === currentUser.id) ||
+              (currentUser.username && u.username && u.username.toLowerCase() === currentUser.username.toLowerCase())
+            );
+            if (foundUser && foundUser.status === 'approved') {
+              transitionToApproved(foundUser);
+              return true;
+            }
+          }
+        }
+      } catch (eUsers) {}
+
+      // 3. Fallback to static repository database.json
+      try {
+        const res = await fetch('database.json?v=' + Date.now(), { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (data && Array.isArray(data.users)) {
