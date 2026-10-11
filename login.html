@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Apex Reserve | Private Wealth & Digital Banking Access</title>
   <meta name="description" content="Sign in or register for an Apex Reserve Private Wealth account. Manage high-tier digital wealth and instant Fedwire transfers.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -185,6 +185,28 @@
     .btn-toggle-password svg {
       display: block;
       transition: transform 0.15s ease;
+    }
+
+    @media (max-width: 600px) {
+      .auth-wrapper {
+        padding: 16px 12px 40px 12px !important;
+      }
+      .auth-card {
+        padding: 24px 16px !important;
+        border-radius: 20px !important;
+        max-width: 100% !important;
+      }
+      .auth-form-title {
+        font-size: 1.35rem !important;
+      }
+      .form-control, input, select, textarea {
+        font-size: 16px !important;
+        height: 48px;
+      }
+      .auth-tab-btn {
+        font-size: 0.82rem;
+        padding: 8px 10px;
+      }
     }
   </style>
 </head>

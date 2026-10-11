@@ -2282,47 +2282,326 @@ html, body {
   }
 }
 
+/* Universal mobile zoom prevention: force inputs to minimum 16px font-size */
+input, select, textarea, .form-control {
+  font-size: 16px !important;
+  touch-action: manipulation;
+}
+
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw;
+  width: 100%;
+  position: relative;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
 @media (max-width: 840px) {
   .app-layout {
-    flex-direction: column;
+    flex-direction: column !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
   }
+
+  /* Compact Mobile Sidebar Header */
   .sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
-    padding: 16px 20px;
+    width: 100% !important;
+    height: auto !important;
+    position: relative !important;
+    padding: 10px 14px 4px 14px !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    background: rgba(11, 15, 23, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    box-sizing: border-box !important;
   }
+
+  .sidebar-header {
+    margin-bottom: 6px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+
+  /* Horizontal Scrollable Navigation Pill Bar */
   .nav-menu {
-    flex-direction: row;
-    overflow-x: auto;
-    padding-bottom: 6px;
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    gap: 8px !important;
+    padding: 4px 2px 8px 2px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
   }
-  .tier-card, .sidebar-user {
-    display: none;
+
+  .nav-menu::-webkit-scrollbar {
+    display: none !important;
   }
+
+  .nav-item {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    padding: 7px 14px !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-full) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .nav-item.active {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(5, 150, 105, 0.22)) !important;
+    border-color: rgba(16, 185, 129, 0.5) !important;
+    color: #10b981 !important;
+  }
+
+  .nav-item svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  /* Nav logout link highlighted */
+  .btn-logout-link {
+    background: rgba(244, 63, 94, 0.12) !important;
+    border-color: rgba(244, 63, 94, 0.35) !important;
+    color: #f43f5e !important;
+  }
+
+  /* Hide bulky sidebar widgets on mobile */
+  .tier-card,
+  .sidebar-user {
+    display: none !important;
+  }
+
+  /* Sticky Topbar with Prominent Log Out and Quick Action */
   .topbar {
-    padding: 0 20px;
+    height: auto !important;
+    min-height: 54px !important;
+    padding: 8px 12px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 999 !important;
+    background: rgba(11, 15, 23, 0.96) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
   }
+
   .topbar-search {
-    display: none;
+    display: none !important;
   }
+
+  #soundToggleBtn {
+    display: none !important;
+  }
+
+  .topbar-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  #openSendModalBtn {
+    padding: 7px 12px !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* GUARANTEED PROMINENT LOGOUT BUTTON */
+  #topbarSignOutBtn,
+  .btn-logout {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 7px 12px !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    background: rgba(244, 63, 94, 0.18) !important;
+    border: 1px solid rgba(244, 63, 94, 0.5) !important;
+    color: #f43f5e !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    cursor: pointer !important;
+  }
+
+  #topbarSignOutBtn:hover,
+  .btn-logout:hover {
+    background: rgba(244, 63, 94, 0.3) !important;
+    color: #ffffff !important;
+    border-color: rgba(244, 63, 94, 0.7) !important;
+  }
+
+  /* Content area on mobile */
   .content-container {
-    padding: 20px;
+    padding: 16px 12px 70px 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
   }
-  .balance-meta-row {
-    grid-template-columns: 1fr;
-  }
-  .sub-accounts-grid {
-    grid-template-columns: 1fr;
-  }
-  .form-grid-2 {
-    grid-template-columns: 1fr;
-  }
+
+  .wealth-overview-grid,
+  .dashboard-split-grid,
+  .cards-gallery-grid,
+  .vault-grid,
+  .sub-accounts-grid,
+  .form-grid-2,
   .rail-selector-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    width: 100% !important;
   }
-  .success-actions {
-    flex-direction: column;
+
+  .balance-meta-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    padding: 14px 0 !important;
+    margin: 16px 0 !important;
+  }
+
+  .balance-meta-row .meta-item:last-child {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* Balance Card & Number Overflow Prevention */
+  .balance-card {
+    padding: 20px 16px !important;
+    border-radius: 18px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .total-balance-number {
+    font-size: clamp(1.85rem, 8vw, 2.45rem) !important;
+    line-height: 1.15 !important;
+    word-break: break-all !important;
+  }
+
+  .balance-toggle-wrap {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* Balance Actions Buttons Grid */
+  .balance-actions-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+  }
+
+  .balance-actions-row .btn {
+    width: 100% !important;
+    padding: 10px 8px !important;
+    font-size: 0.8rem !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+  }
+
+  .balance-actions-row .btn:nth-child(3) {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* Card visual responsiveness */
+  .black-titanium-card {
+    max-width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1.6 / 1 !important;
+    padding: 18px !important;
+  }
+
+  /* Table overflow scrolling protection */
+  .table-responsive,
+  .transactions-table-wrap,
+  .admin-table-container {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    display: block !important;
+    margin-bottom: 14px !important;
+    border-radius: 12px !important;
+  }
+
+  table {
+    min-width: 520px !important;
+  }
+
+  /* Modal responsiveness */
+  .modal-overlay {
+    padding: 8px !important;
+    align-items: flex-end !important;
+  }
+
+  .modal-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 20px 16px !important;
+    border-radius: 20px 20px 14px 14px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .modal-footer-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .modal-footer-actions .btn {
+    width: 100% !important;
+    height: 46px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    padding: 8px 10px !important;
+  }
+
+  #openSendModalBtn span,
+  #topbarSignOutBtn span {
+    font-size: 0.76rem !important;
+  }
+
+  .content-container {
+    padding: 12px 10px 60px 10px !important;
+  }
+
+  .balance-card {
+    padding: 16px 12px !important;
+  }
+
+  .view-title {
+    font-size: 1.3rem !important;
+  }
+
+  .page-title-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
   }
 }
 
@@ -3343,5 +3622,227 @@ html, body {
 .btn-set-verification-fee:hover {
   background: rgba(245, 158, 11, 0.28) !important;
   border-color: rgba(245, 158, 11, 0.6) !important;
+}
+
+/* =========================================================================
+   ULTIMATE MOBILE RESPONSIVENESS OVERRIDES (< 840px, < 640px, < 480px)
+   Prevents mobile keyboard zoom, layout breakage, and ensures the logout button
+   and all banking features are always visible and beautifully positioned.
+   ========================================================================= */
+
+/* 1. Prevent iOS & Android automatic zoom on input focus */
+input, select, textarea, .form-control {
+  font-size: 16px !important;
+  touch-action: manipulation !important;
+}
+
+/* 2. Prevent horizontal viewport stretch */
+html, body, .app-layout, .main-viewport, .admin-standalone-layout {
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+  -webkit-text-size-adjust: 100% !important;
+  touch-action: manipulation !important;
+}
+
+@media (max-width: 840px) {
+  /* Brand mark on topbar */
+  .topbar-mobile-brand {
+    display: flex !important;
+  }
+
+  /* Header and topbar */
+  .topbar {
+    height: auto !important;
+    min-height: 56px !important;
+    padding: 8px 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    background: rgba(11, 15, 23, 0.96) !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+  }
+
+  .topbar-search,
+  #soundToggleBtn {
+    display: none !important;
+  }
+
+  .topbar-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-left: auto !important;
+  }
+
+  #openSendModalBtn {
+    height: 36px !important;
+    padding: 6px 12px !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+  }
+
+  /* ALWAYS VISIBLE LOG OUT BUTTON */
+  #topbarSignOutBtn,
+  .btn-logout {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 36px !important;
+    padding: 6px 12px !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    background: rgba(244, 63, 94, 0.18) !important;
+    border: 1px solid rgba(244, 63, 94, 0.5) !important;
+    color: #f43f5e !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  /* Nav Menu pill scroller */
+  .nav-menu {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    padding: 4px 0 8px 0 !important;
+    gap: 8px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .nav-menu::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .nav-item {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    padding: 8px 14px !important;
+    font-size: 0.82rem !important;
+    border-radius: 20px !important;
+  }
+
+  /* Balance hero & numbers */
+  .balance-card {
+    padding: 20px 16px !important;
+    border-radius: 18px !important;
+  }
+
+  .total-balance-number {
+    font-size: clamp(1.8rem, 8vw, 2.5rem) !important;
+    word-break: break-all !important;
+    line-height: 1.15 !important;
+  }
+
+  .balance-meta-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    padding: 12px 0 !important;
+    margin: 14px 0 !important;
+  }
+
+  .balance-actions-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .balance-actions-row .btn {
+    width: 100% !important;
+    padding: 10px 8px !important;
+    font-size: 0.8rem !important;
+    justify-content: center !important;
+  }
+
+  .balance-actions-row .btn:nth-child(3) {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* Grids */
+  .wealth-overview-grid,
+  .dashboard-split-grid,
+  .cards-gallery-grid,
+  .vault-grid,
+  .sub-accounts-grid,
+  .form-grid-2,
+  .rail-selector-grid,
+  .market-tickers-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Tables container overflow prevention */
+  .transactions-table-wrap,
+  .table-responsive,
+  .admin-table-container {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    display: block !important;
+    border-radius: 12px !important;
+  }
+
+  table {
+    min-width: 500px !important;
+  }
+
+  /* Modal bottom-sheet style */
+  .modal-overlay {
+    padding: 8px !important;
+    align-items: flex-end !important;
+  }
+
+  .modal-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 20px 20px 12px 12px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    padding: 20px 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  .modal-footer-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .modal-footer-actions .btn {
+    width: 100% !important;
+    height: 46px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    padding: 6px 10px !important;
+  }
+
+  #openSendModalBtn,
+  #topbarSignOutBtn {
+    padding: 6px 10px !important;
+    font-size: 0.76rem !important;
+  }
+
+  .content-container {
+    padding: 12px 10px 60px 10px !important;
+  }
+
+  .balance-card {
+    padding: 16px 12px !important;
+  }
+
+  .view-title {
+    font-size: 1.25rem !important;
+  }
 }
 
