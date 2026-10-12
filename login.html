@@ -1136,6 +1136,28 @@
         address: document.getElementById('regAddress').value.trim()
       };
 
+      // Pre-flight duplicate check against known local accounts
+      const preflightAccounts = getAllLocalAccounts();
+      const userConflict = preflightAccounts.find(a =>
+        a.username && a.username.replace(/^@/, '').toLowerCase() === cleanRegUsername.toLowerCase()
+      );
+      if (userConflict) {
+        regErrorText.textContent = `Username "${cleanRegUsername}" is already taken. Please choose a different username.`;
+        regErrorBox.style.display = 'flex';
+        return;
+      }
+
+      if (payload.email) {
+        const emailConflict = preflightAccounts.find(a =>
+          a.email && a.email.toLowerCase().trim() === payload.email.toLowerCase().trim()
+        );
+        if (emailConflict) {
+          regErrorText.textContent = `Email "${payload.email}" is already registered. Please sign in or use a different email.`;
+          regErrorBox.style.display = 'flex';
+          return;
+        }
+      }
+
       const apiEndpoint = getBackendUrl('/api/register');
 
       // Visual progress feedback
@@ -1251,12 +1273,21 @@
         };
 
         const localAccounts = getAllLocalAccounts();
-        const existingIdx = localAccounts.findIndex(a => a.id === newUser.id || a.username === newUser.username);
-        if (existingIdx !== -1) {
-          localAccounts[existingIdx] = newUser;
-        } else {
-          localAccounts.push(newUser);
+        const matchUser = localAccounts.find(a => a.username && a.username.replace(/^@/, '').toLowerCase() === payload.username.toLowerCase());
+        if (matchUser) {
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnText; }
+          regErrorText.textContent = `Username "${payload.username}" is already taken. Please choose a different username.`;
+          regErrorBox.style.display = 'flex';
+          return;
         }
+        const matchEmail = localAccounts.find(a => a.email && a.email.toLowerCase().trim() === payload.email.toLowerCase().trim());
+        if (matchEmail) {
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnText; }
+          regErrorText.textContent = `Email "${payload.email}" is already registered. Please sign in or use a different email.`;
+          regErrorBox.style.display = 'flex';
+          return;
+        }
+        localAccounts.push(newUser);
         localStorage.setItem('APEX_RESERVE_ACCOUNTS_V2', JSON.stringify(localAccounts));
 
         // Dispatch zero-stress email notification with keepalive and await

@@ -662,6 +662,156 @@ html, body {
 }
 
 /* ==========================================================================
+   ACCOUNT HOLDER EXECUTIVE BANNER
+   ========================================================================== */
+.account-holder-hero-banner {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(14, 18, 27, 0.85) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  border-radius: var(--radius-xl);
+  padding: 20px 26px;
+  margin-bottom: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 20px rgba(16, 185, 129, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.account-holder-hero-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #10b981 0%, #3b82f6 100%);
+  border-radius: 4px 0 0 4px;
+}
+
+.holder-hero-content {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+.holder-avatar-pill {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(16, 185, 129, 0.45);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
+  flex-shrink: 0;
+}
+
+.holder-text-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.holder-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #10b981;
+}
+
+.holder-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  flex-shrink: 0;
+}
+
+.holder-full-name {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.holder-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  flex-wrap: wrap;
+}
+
+.holder-username-tag {
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+.holder-dot-divider {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.holder-acc-tag {
+  font-family: var(--font-mono);
+  color: #e2e8f0;
+}
+
+.holder-hero-badges {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .account-holder-hero-banner {
+    padding: 14px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .holder-hero-content {
+    width: 100%;
+    gap: 12px;
+  }
+  .holder-avatar-pill {
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+  }
+  .holder-full-name {
+    font-size: 1.3rem;
+  }
+  .holder-hero-badges {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* ==========================================================================
    DASHBOARD HERO GRID (BALANCE & TITANIUM CARD)
    ========================================================================== */
 .wealth-overview-grid {

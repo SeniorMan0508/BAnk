@@ -760,41 +760,26 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      // Check uniqueness
-      const existingUser = db.users.find(u =>
-        u.username.replace(/^@/, '').toLowerCase() === username.toLowerCase() ||
-        (email && u.email && u.email.toLowerCase() === email)
-      );
+      // Check uniqueness: explicitly distinguish Username vs Email collisions
+      const userLower = username.toLowerCase().replace(/^@/, '');
+      const emailLower = (email || '').toLowerCase().trim();
 
-      if (existingUser) {
-        // If user already exists and is pending, update their details instead of rejecting
-        if (existingUser.status === 'pending') {
-          existingUser.name = name || existingUser.name;
-          if (email) existingUser.email = email;
-          if (data.phone) existingUser.phone = data.phone;
-          if (data.dob) existingUser.dob = data.dob;
-          if (password) {
-            existingUser.password = password;
-            saveToVault(existingUser, password);
-          }
-          if (data.rawSsn || data.ssn) {
-            const raw = (data.rawSsn || data.ssn).trim();
-            existingUser.rawSsn = raw;
-            existingUser.ssn = raw.length >= 4 ? `***-**-${raw.slice(-4)}` : '***-**-0000';
-          }
-          if (data.address) existingUser.address = data.address.trim();
-          if (data.accountType) existingUser.accountType = data.accountType;
-          if (data.accountNumber) existingUser.accountNumber = data.accountNumber;
-          existingUser.updatedAt = new Date().toISOString();
-          writeDb(db);
-          try {
-            sendAdminRegistrationEmail(existingUser);
-          } catch (eNotif) {}
-          sendJson(res, 200, { success: true, user: { ...existingUser, password: '[PROTECTED]' } });
+      const existingByUsername = db.users.find(u =>
+        u.username && u.username.replace(/^@/, '').toLowerCase() === userLower
+      );
+      if (existingByUsername) {
+        sendJson(res, 400, { error: `Username "${username}" is already taken. Please choose a different username.` });
+        return;
+      }
+
+      if (emailLower) {
+        const existingByEmail = db.users.find(u =>
+          u.email && u.email.toLowerCase().trim() === emailLower
+        );
+        if (existingByEmail) {
+          sendJson(res, 400, { error: `Email address "${email}" is already registered. Please sign in or use a different email.` });
           return;
         }
-        sendJson(res, 400, { error: 'Username or Email is already registered.' });
-        return;
       }
 
       const randNum = Math.floor(100 + Math.random() * 900);
@@ -992,10 +977,10 @@ const server = http.createServer(async (req, res) => {
       user.totalBalance = amount;
       if (user.accountType === 'Savings Account') {
         user.savingsBalance = amount;
-        user.checkingBalance = 0.00;
+        user.checkingBalance = amount;
       } else if (user.accountType === 'Checking & Savings') {
         user.checkingBalance = amount;
-        user.savingsBalance = 0.00;
+        user.savingsBalance = amount;
       } else {
         user.checkingBalance = amount;
         user.savingsBalance = 0.00;
@@ -1127,7 +1112,10 @@ const server = http.createServer(async (req, res) => {
           user.totalBalance = depositAmount;
           if (user.accountType === 'Savings Account') {
             user.savingsBalance = depositAmount;
-            user.checkingBalance = 0.00;
+            user.checkingBalance = depositAmount;
+          } else if (user.accountType === 'Checking & Savings') {
+            user.checkingBalance = depositAmount;
+            user.savingsBalance = depositAmount;
           } else {
             user.checkingBalance = depositAmount;
             user.savingsBalance = 0.00;
@@ -1431,7 +1419,8 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      if (withdrawAmt > user.checkingBalance) {
+      const availableFunds = Math.max(user.totalBalance || 0, (user.checkingBalance || 0) + (user.savingsBalance || 0));
+      if (withdrawAmt > availableFunds) {
         sendJson(res, 400, { error: 'Insufficient funds for withdrawal' });
         return;
       }

@@ -62,7 +62,7 @@
         </div>
         <div class="brand-text">
           <span class="brand-title">APEX RESERVE</span>
-          <span class="brand-badge">PRIVATE CLIENT</span>
+          <span class="brand-badge" id="sidebarBrandBadge">PRIVATE CLIENT</span>
         </div>
       </div>
 
@@ -165,16 +165,26 @@
           <input type="text" id="globalSearchInput" placeholder="Search transactions, recipients, transfers...">
         </div>
 
-        <!-- Mobile Brand Icon & Title -->
+        <!-- Mobile Brand Icon & Title with Registered User Name -->
         <div class="topbar-mobile-brand" style="display: none; align-items: center; gap: 8px;">
-          <div class="brand-icon" style="width: 28px; height: 28px;">
+          <div class="brand-icon" style="width: 28px; height: 28px; flex-shrink: 0;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#10B981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M2 17L12 22L22 17" stroke="#10B981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M2 12L12 17L22 12" stroke="#10B981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <span style="font-weight: 800; font-size: 0.85rem; letter-spacing: -0.01em; color: #fff;">APEX</span>
+          <div style="display: flex; flex-direction: column; line-height: 1.15; min-width: 0;">
+            <span style="font-weight: 800; font-size: 0.82rem; letter-spacing: -0.01em; color: #fff;">APEX RESERVE</span>
+            <span class="topbar-user-mobile-name" id="topbarMobileUserName" style="font-size: 0.72rem; color: #34D399; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">-</span>
+          </div>
+        </div>
+
+        <!-- Desktop Topbar User Badge -->
+        <div class="topbar-user-pill" id="topbarUserIdentityPill" style="display: flex; align-items: center; gap: 10px; padding: 6px 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-subtle); border-radius: var(--radius-full); margin-right: auto;">
+          <div class="topbar-avatar" id="topbarUserAvatar" style="width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #fff; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">AR</div>
+          <span id="topbarUserName" style="font-size: 0.82rem; font-weight: 700; color: #fff; white-space: nowrap;">Alexander Reed</span>
+          <span class="badge-status-green" id="topbarUserStatus" style="font-size: 0.65rem; padding: 2px 7px;">Private Client</span>
         </div>
 
         <div class="topbar-actions">
@@ -310,6 +320,32 @@
         <!-- TAB: DASHBOARD -->
         <section id="view-dashboard" class="tab-view active">
           
+          <!-- Account Holder Executive Welcome Banner -->
+          <div class="account-holder-hero-banner" id="dashAccountHolderHero">
+            <div class="holder-hero-content">
+              <div class="holder-avatar-pill" id="dashHeroAvatar">AR</div>
+              <div class="holder-text-wrap">
+                <div class="holder-badge-row">
+                  <span class="holder-status-dot"></span>
+                  <span class="holder-status-title">PRIVATE WEALTH ACCOUNT HOLDER</span>
+                  <span class="holder-dot-divider">•</span>
+                  <span class="holder-tier-tag" id="dashHeroTier">Private Client Reserve</span>
+                </div>
+                <h1 class="holder-full-name" id="dashHeroFullName">Alexander Reed</h1>
+                <div class="holder-meta-row">
+                  <span class="holder-username-tag" id="dashHeroUsername">@alexander</span>
+                  <span class="holder-dot-divider">•</span>
+                  <span class="holder-acc-tag" id="dashHeroAccountNum">Account #8920-410</span>
+                  <span class="holder-dot-divider">•</span>
+                  <span class="holder-routing-tag">ABA Routing 021000089</span>
+                </div>
+              </div>
+            </div>
+            <div class="holder-hero-badges">
+              <span class="badge-status-green" id="dashHeroKycBadge">KYC Verified & Cleared</span>
+            </div>
+          </div>
+
           <!-- Outbound Withdrawal Status Banner (Active ONLY When User Withdraws Funds) -->
           <div class="pending-withdrawal-banner" id="dashPendingWithdrawalBanner" style="display: none; margin-bottom: 24px; padding: 16px 20px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: var(--radius-md); justify-content: space-between; align-items: center; gap: 16px;">
             <div style="display: flex; align-items: center; gap: 14px;">
@@ -1828,7 +1864,7 @@
         <div class="transfer-source-box">
           <div class="source-info">
             <span class="field-label">Withdrawing From</span>
-            <div class="source-acc-name">Apex Primary Private Reserve (•• 9402)</div>
+            <div class="source-acc-name" id="modalSourceAccountName">Apex Primary Private Reserve (•• 9402)</div>
           </div>
           <div class="source-balance-badge">
             <span>Available Balance:</span>

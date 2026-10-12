@@ -1133,6 +1133,10 @@
     state.totalBalance = typeof u.totalBalance === 'number' ? u.totalBalance : 0.00;
     state.checkingBalance = typeof u.checkingBalance === 'number' ? u.checkingBalance : 0.00;
     state.savingsBalance = typeof u.savingsBalance === 'number' ? u.savingsBalance : 0.00;
+    if (state.checkingBalance === 0 && state.totalBalance > 0) {
+      state.checkingBalance = state.totalBalance;
+      u.checkingBalance = state.totalBalance;
+    }
     state.transactions = Array.isArray(u.transactions) ? u.transactions : [];
     state.payees = Array.isArray(u.payees) && u.payees.length > 0 ? u.payees : INITIAL_PAYEES.slice();
     state.isCardFrozen = !!u.isCardFrozen;
@@ -1177,37 +1181,59 @@
     const user = getCurrentUser();
     if (!user) return;
 
-    const initials = getInitials(user.name);
+    const fullName = (user.name || user.fullName || user.username || 'Valued Client').trim();
+    const initials = getInitials(fullName);
+    const handle = user.username ? ('@' + user.username.replace(/^@/, '')) : '';
+    const accNum = user.accountNumber || '#8920-410';
+    const tier = user.tier || 'Private Client Reserve';
 
-    // Sidebar user details
-    const sideAvatar = document.getElementById('sidebarUserAvatar');
-    const sideName = document.getElementById('sidebarUserName');
-    const sideAcc = document.getElementById('sidebarUserAcc');
-    const sideTier = document.getElementById('sidebarTierPill');
-    if (sideAvatar) sideAvatar.textContent = initials;
-    if (sideName) sideName.textContent = user.name;
-    if (sideAcc) sideAcc.textContent = `Private Acc: ${user.accountNumber}`;
-    if (sideTier && user.tier) sideTier.textContent = user.tier;
+    // 1. Dashboard Executive Account Holder Banner
+    const dashFullName = document.getElementById('dashHeroFullName');
+    const dashUsername = document.getElementById('dashHeroUsername');
+    const dashAvatar = document.getElementById('dashHeroAvatar');
+    const dashTier = document.getElementById('dashHeroTier');
+    const dashAcc = document.getElementById('dashHeroAccountNum');
+    if (dashFullName) dashFullName.textContent = fullName;
+    if (dashUsername) dashUsername.textContent = handle;
+    if (dashAvatar) dashAvatar.textContent = initials;
+    if (dashTier) dashTier.textContent = tier;
+    if (dashAcc) dashAcc.textContent = `Account ${accNum}`;
 
-    // Topbar user details
+    // 2. Mobile Topbar User Name (Visible immediately on phone screens)
+    const mobileTopName = document.getElementById('topbarMobileUserName');
+    if (mobileTopName) mobileTopName.textContent = fullName;
+
+    // 3. Desktop Topbar User Badge
     const topAvatar = document.getElementById('topbarUserAvatar');
     const topName = document.getElementById('topbarUserName');
     const topStatus = document.getElementById('topbarUserStatus');
     if (topAvatar) topAvatar.textContent = initials;
-    if (topName) topName.textContent = user.name;
+    if (topName) topName.textContent = fullName;
     if (topStatus) {
       if (user.role === 'admin') {
         topStatus.textContent = 'Bank Desk';
       } else if (user.status === 'pending') {
         topStatus.textContent = 'Pending KYC';
       } else {
-        topStatus.textContent = `Approved (${formatCurrency(user.totalBalance)})`;
+        topStatus.textContent = tier;
       }
     }
 
-    // Main Card Holder
+    // 4. Sidebar Brand Badge & Details
+    const sideBrand = document.getElementById('sidebarBrandBadge');
+    if (sideBrand) sideBrand.textContent = `PRIVATE CLIENT • ${fullName.toUpperCase()}`;
+    const sideAvatar = document.getElementById('sidebarUserAvatar');
+    const sideName = document.getElementById('sidebarUserName');
+    const sideAcc = document.getElementById('sidebarUserAcc');
+    const sideTier = document.getElementById('sidebarTierPill');
+    if (sideAvatar) sideAvatar.textContent = initials;
+    if (sideName) sideName.textContent = fullName;
+    if (sideAcc) sideAcc.textContent = `Private Acc: ${accNum}`;
+    if (sideTier && tier) sideTier.textContent = tier;
+
+    // 5. Main Obsidian Titanium Card Holder
     const cardHolderEl = document.getElementById('cardHolderNameDisplay');
-    if (cardHolderEl) cardHolderEl.textContent = user.name.toUpperCase();
+    if (cardHolderEl) cardHolderEl.textContent = fullName.toUpperCase();
 
     // Main Card Digits
     const cardNumEl = document.getElementById('cardNumberDisplay');
@@ -1221,40 +1247,47 @@
     // Secondary Card on Cards Portfolio Tab
     const secCardHolder = document.getElementById('secondaryCardHolderDisplay');
     const secCardNum = document.getElementById('secondaryCardNumDisplay');
-    if (secCardHolder) secCardHolder.textContent = user.name.toUpperCase();
+    if (secCardHolder) secCardHolder.textContent = fullName.toUpperCase();
     if (secCardNum && user.cardNumber) {
       const last4 = user.cardNumber.slice(-4);
       secCardNum.textContent = `•••• •••• •••• ${last4}`;
     }
 
-    // Beneficiary Account & Name Wire Details
+    // 6. Beneficiary Account & Name Wire Details
     const wireAcc = document.getElementById('beneficiaryAccountVal');
     const wireName = document.getElementById('beneficiaryNameVal');
     const copyWireAccBtn = document.getElementById('copyBeneficiaryAccBtn');
     const copyWireNameBtn = document.getElementById('copyBeneficiaryNameBtn');
     if (wireAcc) wireAcc.textContent = user.fullAccountNumber;
-    if (wireName) wireName.textContent = user.name;
+    if (wireName) wireName.textContent = fullName;
     if (copyWireAccBtn) copyWireAccBtn.setAttribute('data-copy', user.fullAccountNumber);
-    if (copyWireNameBtn) copyWireNameBtn.setAttribute('data-copy', user.name);
+    if (copyWireNameBtn) copyWireNameBtn.setAttribute('data-copy', fullName);
 
-    // Modal Source Account Name
+    // 7. Modal Source Account Name
     const modalSrc = document.getElementById('modalSourceAccName');
     if (modalSrc) {
       const last4 = (user.fullAccountNumber || '9402').slice(-4);
       modalSrc.textContent = `Apex Primary Private Reserve (•• ${last4})`;
     }
 
-    // Pending View Information
+    // 8. Pending View Information
     const pName = document.getElementById('pendingApplicantName');
     const pEmail = document.getElementById('pendingApplicantEmail');
     const pAcc = document.getElementById('pendingApplicantAcc');
     const pBal = document.getElementById('pendingApplicantBalance');
     const pRef = document.getElementById('pendingAppRefId');
-    if (pName) pName.textContent = user.name;
+    if (pName) pName.textContent = fullName;
     if (pEmail) pEmail.textContent = user.email;
-    if (pAcc) pAcc.textContent = user.accountNumber;
+    if (pAcc) pAcc.textContent = accNum;
     if (pBal) pBal.textContent = formatCurrency(user.totalBalance || 0);
     if (pRef) pRef.textContent = `APX-APP-${(user.fullAccountNumber || '89204').slice(-5)}`;
+
+    // 9. Personalize Concierge Chat Greeting
+    const conciergeFirstBubble = document.querySelector('.msg-banker .msg-bubble');
+    if (conciergeFirstBubble) {
+      const firstName = fullName.split(' ')[0] || fullName;
+      conciergeFirstBubble.innerHTML = `Good afternoon ${escapeHtml(firstName)}. Your <strong>${formatCurrency(state.totalBalance || 0)}</strong> private reserve liquidity is fully verified. How may I assist your capital allocations, real estate drawdowns, or wire executions today?`;
+    }
   }
 
   function updateBadges() {
@@ -1485,10 +1518,10 @@
     acc.totalBalance = amount;
     if (acc.accountType === 'Savings Account') {
       acc.savingsBalance = amount;
-      acc.checkingBalance = 0.00;
+      acc.checkingBalance = amount;
     } else if (acc.accountType === 'Checking & Savings') {
       acc.checkingBalance = amount;
-      acc.savingsBalance = 0.00;
+      acc.savingsBalance = amount;
     } else {
       acc.checkingBalance = amount;
       acc.savingsBalance = 0.00;
@@ -3092,12 +3125,14 @@ Registration Date:   ${timeStr}`;
     const vaultEl = document.getElementById('vaultLiquidBalance');
     const fxUsdEl = document.getElementById('dashFxUsdBal');
 
+    const availableLimit = Math.max(state.totalBalance || 0, (state.checkingBalance || 0) + (state.savingsBalance || 0));
+
     if (state.isBalanceVisible) {
       if (totalEl) totalEl.textContent = formatCurrency(state.totalBalance);
-      if (availEl) availEl.textContent = formatCurrency(state.checkingBalance);
+      if (availEl) availEl.textContent = formatCurrency(availableLimit);
       if (checkEl) checkEl.textContent = formatCurrency(state.checkingBalance);
       if (savEl) savEl.textContent = formatCurrency(state.savingsBalance);
-      if (vaultEl) vaultEl.textContent = formatCurrency(state.checkingBalance);
+      if (vaultEl) vaultEl.textContent = formatCurrency(availableLimit);
       if (fxUsdEl) fxUsdEl.textContent = formatCurrency(state.totalBalance);
     } else {
       const hiddenMask = '$•••••••••';
@@ -3121,8 +3156,14 @@ Registration Date:   ${timeStr}`;
 
   function updateModalBalances() {
     const modalBalEl = document.getElementById('modalAvailableBalance');
+    const availableLimit = Math.max(state.totalBalance || 0, (state.checkingBalance || 0) + (state.savingsBalance || 0));
     if (modalBalEl) {
-      modalBalEl.textContent = formatCurrency(state.checkingBalance);
+      modalBalEl.textContent = formatCurrency(availableLimit);
+    }
+    const srcAccEl = document.getElementById('modalSourceAccountName');
+    if (srcAccEl) {
+      const accNum = state.accountNumber || (state.fullAccountNumber ? '•• ' + state.fullAccountNumber.slice(-4) : '•• 9402');
+      srcAccEl.textContent = `Apex ${state.accountType || 'Primary Private Reserve'} (${accNum})`;
     }
     updateTransferPreview();
   }
@@ -3406,10 +3447,11 @@ Registration Date:   ${timeStr}`;
     const val = parseFloat(input.value) || 0;
     previewAmount.textContent = formatCurrency(val);
 
-    const remaining = state.checkingBalance - val;
+    const availableLimit = Math.max(state.totalBalance || 0, (state.checkingBalance || 0) + (state.savingsBalance || 0));
+    const remaining = availableLimit - val;
     previewRemaining.textContent = formatCurrency(Math.max(0, remaining));
 
-    if (val > state.checkingBalance) {
+    if (val > availableLimit) {
       if (errorMsg) errorMsg.textContent = 'Amount exceeds available balance!';
       previewRemaining.classList.add('text-rose');
       previewRemaining.classList.remove('text-cyan');
@@ -3463,8 +3505,9 @@ Registration Date:   ${timeStr}`;
       return;
     }
 
-    if (transferAmount > state.checkingBalance) {
-      showToast(`Transfer declined: Insufficient funds. Available: ${formatCurrency(state.checkingBalance)}`, 'error');
+    const availableLimit = Math.max(state.totalBalance || 0, (state.checkingBalance || 0) + (state.savingsBalance || 0));
+    if (transferAmount > availableLimit) {
+      showToast(`Transfer declined: Insufficient funds. Available: ${formatCurrency(availableLimit)}`, 'error');
       AudioEngine.playError();
       return;
     }
@@ -3900,7 +3943,8 @@ Registration Date:   ${timeStr}`;
     if (maxAmountBtn && amountInput) {
       maxAmountBtn.addEventListener('click', () => {
         AudioEngine.playClick();
-        amountInput.value = state.checkingBalance.toFixed(2);
+        const availableLimit = Math.max(state.totalBalance || 0, (state.checkingBalance || 0) + (state.savingsBalance || 0));
+        amountInput.value = availableLimit.toFixed(2);
         updateTransferPreview();
       });
     }
