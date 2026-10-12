@@ -5177,5 +5177,44 @@ Reference: ${memo}`;
   window.updateBadges = updateBadges;
   window.approveAccount = approveAccount;
   window.rejectAccount = rejectAccount;
+  window.syncWithServerDatabase = syncWithServerDatabase;
+
+  window.syncNewApplicant = function(newApplicant, isDirectAccept, depositAmount, recordName) {
+    if (!newApplicant) return;
+    const normNewUser = (newApplicant.username || '').replace(/^@/, '').toLowerCase();
+    const normNewEmail = (newApplicant.email || '').toLowerCase();
+    const existingIdx = accounts.findIndex(a =>
+      a.id === newApplicant.id ||
+      (normNewUser && a.username && a.username.replace(/^@/, '').toLowerCase() === normNewUser) ||
+      (normNewEmail && a.email && a.email.toLowerCase() === normNewEmail)
+    );
+
+    if (existingIdx !== -1) {
+      accounts[existingIdx] = { ...accounts[existingIdx], ...newApplicant };
+    } else {
+      accounts.unshift(newApplicant);
+    }
+
+    saveAccounts();
+    if (newApplicant.password) {
+      savePermanentCredential(newApplicant, newApplicant.password);
+    }
+
+    if (isDirectAccept && typeof approveAccount === 'function') {
+      approveAccount(newApplicant.id, depositAmount || 0, recordName || 'Federal Reserve Wire Deposit');
+    } else {
+      renderAdminDashboard();
+      updateBadges();
+    }
+  };
+
+  // Automated live polling on Admin Dashboard so new applicants appear in real-time
+  if (typeof window !== 'undefined' && window.location.pathname.includes('admin')) {
+    setInterval(() => {
+      try {
+        syncWithServerDatabase();
+      } catch (ePoll) {}
+    }, 3500);
+  }
 
 })();

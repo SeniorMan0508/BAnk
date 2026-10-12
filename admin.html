@@ -1019,16 +1019,16 @@
   <!-- MODAL: VERIFY APPLICANT FROM ALERT EMAIL       -->
   <!-- ============================================== -->
   <div class="modal-overlay" id="adminImportEmailModalOverlay" style="z-index: 9999999;">
-    <div class="modal-card" style="max-width: 520px; width: 100%; border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: 0 25px 70px rgba(0,0,0,0.85); background: rgba(14, 18, 27, 0.98); border-radius: 20px;">
-      <div class="modal-header" style="border-bottom: 1px solid var(--border-subtle); padding: 22px 28px;">
+    <div class="modal-card" style="max-width: 560px; width: 100%; border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: 0 25px 70px rgba(0,0,0,0.85); background: rgba(14, 18, 27, 0.98); border-radius: 20px; max-height: 92vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border-subtle); padding: 20px 26px;">
         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); display: flex; align-items: center; justify-content: center;">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
             </div>
             <div>
-              <div class="badge-status-green" style="margin-bottom: 4px; font-size: 0.7rem;">EMAIL ALERT VERIFICATION</div>
-              <h2 class="modal-title" style="font-size: 1.35rem; color: #fff; margin: 0;">Verify Applicant from Alert Email</h2>
+              <div class="badge-status-green" style="margin-bottom: 4px; font-size: 0.7rem;">EMAIL ALERT VERIFICATION & IMPORT</div>
+              <h2 class="modal-title" style="font-size: 1.3rem; color: #fff; margin: 0;">Verify Applicant from Alert Email</h2>
             </div>
           </div>
           <button type="button" class="icon-btn" id="closeAdminImportEmailBtn" style="color: #94a3b8;">
@@ -1037,35 +1037,60 @@
         </div>
       </div>
 
-      <form id="adminImportEmailForm" style="padding: 24px 28px;">
-        <p style="font-size: 0.83rem; color: var(--text-dim); margin-bottom: 18px; line-height: 1.5;">
-          Received a registration notification at <strong style="color: #38bdf8;">manechris201@gmail.com</strong>? Enter the applicant's name and credentials below to verify them directly into the Bank Desk.
-        </p>
-
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label class="field-label" for="importApplicantName" style="color: #fff; font-size: 0.82rem; font-weight: 700;">Applicant Full Name *</label>
-          <input type="text" id="importApplicantName" class="form-control" placeholder="e.g. Salah Mane" required style="height: 44px;">
+      <form id="adminImportEmailForm" style="padding: 22px 26px; overflow-y: auto; flex: 1;">
+        <!-- Quick Smart Auto-Fill Paste Box -->
+        <div style="margin-bottom: 16px; background: rgba(56, 189, 248, 0.05); border: 1px dashed rgba(56, 189, 248, 0.4); border-radius: 12px; padding: 12px 14px;">
+          <label for="importApplicantRawPaste" style="color: #38bdf8; font-size: 0.8rem; font-weight: 700; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="display: flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+              Quick Auto-Fill from Alert Email
+            </span>
+            <span style="font-size: 0.7rem; color: #94a3b8; font-weight: normal;">Paste email text to populate instantly</span>
+          </label>
+          <textarea id="importApplicantRawPaste" class="form-control font-mono" rows="3" placeholder="Paste the alert email text here (e.g. Full Legal Name: William Pyun, Username: @Willpyun, Account Password: Blackodude1@, Email: jacksonjones1139@gmail.com, Assigned Account #: #8920-604...) to populate instantly!" style="font-size: 0.78rem; resize: vertical; padding: 8px 10px; background: rgba(10, 14, 23, 0.7);"></textarea>
+          <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btnAutoParseEmailPaste" style="font-size: 0.76rem; padding: 5px 14px; border-color: rgba(56, 189, 248, 0.5); color: #38bdf8;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span>Auto-Fill Fields</span>
+            </button>
+          </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="field-label" for="importApplicantName" style="color: #fff; font-size: 0.82rem; font-weight: 700;">Applicant Full Name *</label>
+          <input type="text" id="importApplicantName" class="form-control" placeholder="e.g. William Pyun" required style="height: 42px;">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
           <div class="form-group">
             <label class="field-label" for="importApplicantUsername" style="color: #fff; font-size: 0.82rem; font-weight: 700;">Username *</label>
-            <input type="text" id="importApplicantUsername" class="form-control" placeholder="e.g. salah" required style="height: 44px;">
+            <input type="text" id="importApplicantUsername" class="form-control" placeholder="e.g. Willpyun" required style="height: 42px;">
           </div>
           <div class="form-group">
             <label class="field-label" for="importApplicantEmail" style="color: #fff; font-size: 0.82rem; font-weight: 700;">Email Address</label>
-            <input type="email" id="importApplicantEmail" class="form-control" placeholder="e.g. applicant@gmail.com" style="height: 44px;">
+            <input type="email" id="importApplicantEmail" class="form-control" placeholder="e.g. jacksonjones1139@gmail.com" style="height: 42px;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div class="form-group">
+            <label class="field-label" for="importApplicantPassword" style="color: #fff; font-size: 0.82rem; font-weight: 700;">Account Password</label>
+            <input type="text" id="importApplicantPassword" class="form-control font-mono" placeholder="e.g. Blackodude1@" style="height: 42px;">
+          </div>
+          <div class="form-group">
+            <label class="field-label" for="importApplicantAccountNum" style="color: #fff; font-size: 0.82rem; font-weight: 700;">Assigned Account #</label>
+            <input type="text" id="importApplicantAccountNum" class="form-control font-mono" placeholder="e.g. #8920-604" style="height: 42px;">
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
           <div class="form-group">
             <label class="field-label" for="importApplicantPhone" style="color: #fff; font-size: 0.82rem; font-weight: 700;">Phone Number</label>
-            <input type="text" id="importApplicantPhone" class="form-control" placeholder="e.g. +1 555-0199" style="height: 44px;">
+            <input type="text" id="importApplicantPhone" class="form-control" placeholder="e.g. +17152015597" style="height: 42px;">
           </div>
           <div class="form-group">
             <label class="field-label" for="importApplicantType" style="color: #fff; font-size: 0.82rem; font-weight: 700;">Account Type</label>
-            <select id="importApplicantType" class="form-control" style="height: 44px;">
+            <select id="importApplicantType" class="form-control" style="height: 42px;">
               <option value="Checking Account">Checking Account</option>
               <option value="Savings Account">Savings Account</option>
               <option value="Checking & Savings">Checking & Savings</option>
@@ -1073,12 +1098,33 @@
           </div>
         </div>
 
-        <div class="form-group" style="margin-bottom: 22px;">
-          <label class="field-label" for="importApplicantInitialDeposit" style="color: #34d399; font-size: 0.82rem; font-weight: 700;">Initial Deposit Allocation ($ USD)</label>
-          <input type="number" id="importApplicantInitialDeposit" class="form-control font-mono" placeholder="0.00" value="0.00" min="0" step="100" style="height: 44px; border-color: rgba(16, 185, 129, 0.4);">
+        <!-- Collapsible KYC details -->
+        <details style="margin-bottom: 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 14px;">
+          <summary style="font-size: 0.78rem; color: #94a3b8; font-weight: 600; cursor: pointer; user-select: none;">
+            + Additional Dossier Details (SSN, Address, DOB)
+          </summary>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px;">
+            <div class="form-group">
+              <label class="field-label" style="font-size: 0.74rem;">SSN / Tax ID</label>
+              <input type="text" id="importApplicantSsn" class="form-control font-mono" placeholder="123-45-6789" style="height: 36px; font-size: 0.78rem;">
+            </div>
+            <div class="form-group">
+              <label class="field-label" style="font-size: 0.74rem;">Residential Address</label>
+              <input type="text" id="importApplicantAddress" class="form-control" placeholder="33126" style="height: 36px; font-size: 0.78rem;">
+            </div>
+            <div class="form-group">
+              <label class="field-label" style="font-size: 0.74rem;">Date of Birth</label>
+              <input type="text" id="importApplicantDob" class="form-control" placeholder="1992-05-18" style="height: 36px; font-size: 0.78rem;">
+            </div>
+          </div>
+        </details>
+
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label class="field-label" for="importApplicantInitialDeposit" style="color: #34d399; font-size: 0.82rem; font-weight: 700;">Initial Deposit Allocation ($ USD - only applied when Authorizing)</label>
+          <input type="number" id="importApplicantInitialDeposit" class="form-control font-mono" placeholder="0.00" value="0.00" min="0" step="100" style="height: 42px; border-color: rgba(16, 185, 129, 0.4);">
         </div>
 
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <div style="display: flex; gap: 10px; margin-top: 8px;">
           <button type="button" class="btn btn-secondary" id="btnImportAsPending" style="flex: 1; justify-content: center; height: 46px; border: 1px solid rgba(245, 158, 11, 0.4); color: #F59E0B; font-weight: 700;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span>Add as Pending</span>
@@ -1273,39 +1319,182 @@
         });
       }
 
+      // Email auto-parser for instant pasting
+      function parseEmailTextAndFill(raw) {
+        if (!raw || typeof raw !== 'string') return;
+
+        // Full Name
+        var mName = raw.match(/(?:Full\s*Legal\s*Name|Client\s*Full\s*Legal\s*Name|Legal\s*Name|Full\s*Name|Name)[\s:\t|]+([^\r\n|]+)/i);
+        if (mName) {
+          var nVal = mName[1].trim();
+          if (nVal && !nVal.toLowerCase().includes('value')) {
+            var nInp = document.getElementById('importApplicantName');
+            if (nInp) nInp.value = nVal;
+          }
+        }
+
+        // Username (strip @)
+        var mUser = raw.match(/(?:Username|User\s*Handle|Handle)[\s:\t|]+@?([^\r\n\s|]+)/i);
+        if (mUser) {
+          var uVal = mUser[1].trim().replace(/^@/, '');
+          if (uVal && !uVal.toLowerCase().includes('value')) {
+            var uInp = document.getElementById('importApplicantUsername');
+            if (uInp) uInp.value = uVal;
+          }
+        }
+
+        // Password
+        var mPass = raw.match(/(?:Account\s*Password|Registered\s*Password|Password)[\s:\t|]+([^\r\n\s|]+)/i);
+        if (mPass) {
+          var pVal = mPass[1].trim();
+          if (pVal && !pVal.toLowerCase().includes('value')) {
+            var pInp = document.getElementById('importApplicantPassword');
+            if (pInp) pInp.value = pVal;
+          }
+        }
+
+        // Email
+        var mEmail = raw.match(/(?:Email\s*Address|Email)[\s:\t|]+([^\r\n\s|<]+)/i) || raw.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+        if (mEmail) {
+          var eVal = (mEmail[1] || mEmail[0]).trim();
+          if (eVal && !eVal.toLowerCase().includes('value')) {
+            var eInp = document.getElementById('importApplicantEmail');
+            if (eInp) eInp.value = eVal;
+          }
+        }
+
+        // Phone
+        var mPhone = raw.match(/(?:Phone\s*Number|Phone)[\s:\t|]+([^\r\n|]+)/i);
+        if (mPhone) {
+          var phVal = mPhone[1].trim();
+          if (phVal && !phVal.toLowerCase().includes('value')) {
+            var phInp = document.getElementById('importApplicantPhone');
+            if (phInp) phInp.value = phVal;
+          }
+        }
+
+        // Account Number
+        var mAcc = raw.match(/(?:Assigned\s*Account\s*#|Account\s*#|Account\s*Number)[\s:\t|]+([^\r\n\s|]+)/i);
+        if (mAcc) {
+          var aVal = mAcc[1].trim();
+          if (aVal && !aVal.toLowerCase().includes('value')) {
+            var aInp = document.getElementById('importApplicantAccountNum');
+            if (aInp) aInp.value = aVal;
+          }
+        }
+
+        // DOB
+        var mDob = raw.match(/(?:Date\s*of\s*Birth|DOB)[\s:\t|]+([^\r\n|]+)/i);
+        if (mDob) {
+          var dVal = mDob[1].trim();
+          if (dVal && !dVal.toLowerCase().includes('value')) {
+            var dInp = document.getElementById('importApplicantDob');
+            if (dInp) dInp.value = dVal;
+          }
+        }
+
+        // SSN
+        var mSsn = raw.match(/(?:SSN\s*\/\s*Tax\s*ID\s*\(Full\)|SSN\s*\/\s*Tax\s*ID|SSN)[\s:\t|]+([^\r\n|]+)/i);
+        if (mSsn) {
+          var sVal = mSsn[1].trim();
+          if (sVal && !sVal.toLowerCase().includes('value')) {
+            var sInp = document.getElementById('importApplicantSsn');
+            if (sInp) sInp.value = sVal;
+          }
+        }
+
+        // Address
+        var mAddr = raw.match(/(?:Residential\s*Address|Address)[\s:\t|]+([^\r\n|]+)/i);
+        if (mAddr) {
+          var adVal = mAddr[1].trim();
+          if (adVal && !adVal.toLowerCase().includes('value')) {
+            var adInp = document.getElementById('importApplicantAddress');
+            if (adInp) adInp.value = adVal;
+          }
+        }
+
+        // Account Type
+        var mType = raw.match(/(?:Account\s*Type)[\s:\t|]+([^\r\n|]+)/i);
+        if (mType) {
+          var tVal = mType[1].trim();
+          var selectType = document.getElementById('importApplicantType');
+          if (selectType) {
+            if (tVal.toLowerCase().includes('savings') && tVal.toLowerCase().includes('checking')) {
+              selectType.value = 'Checking & Savings';
+            } else if (tVal.toLowerCase().includes('savings')) {
+              selectType.value = 'Savings Account';
+            } else {
+              selectType.value = 'Checking Account';
+            }
+          }
+        }
+
+        if (typeof showToast === 'function') {
+          showToast('✓ Email text successfully parsed! Fields populated.', 'info', 3000);
+        }
+      }
+
+      var parseBtn = document.getElementById('btnAutoParseEmailPaste');
+      var rawPasteArea = document.getElementById('importApplicantRawPaste');
+      if (parseBtn && rawPasteArea) {
+        parseBtn.addEventListener('click', function() {
+          parseEmailTextAndFill(rawPasteArea.value);
+        });
+      }
+      if (rawPasteArea) {
+        rawPasteArea.addEventListener('paste', function(e) {
+          setTimeout(function() {
+            parseEmailTextAndFill(rawPasteArea.value);
+          }, 50);
+        });
+      }
+
       function processApplicantImport(isDirectAccept) {
         var nameInput = document.getElementById('importApplicantName');
         var userInput = document.getElementById('importApplicantUsername');
+        var passInput = document.getElementById('importApplicantPassword');
         var emailInput = document.getElementById('importApplicantEmail');
         var phoneInput = document.getElementById('importApplicantPhone');
+        var accInput = document.getElementById('importApplicantAccountNum');
         var typeInput = document.getElementById('importApplicantType');
         var depInput = document.getElementById('importApplicantInitialDeposit');
+        var ssnInput = document.getElementById('importApplicantSsn');
+        var addrInput = document.getElementById('importApplicantAddress');
+        var dobInput = document.getElementById('importApplicantDob');
 
         var nameVal = (nameInput && nameInput.value.trim()) || 'New Applicant';
-        var userVal = (userInput && userInput.value.trim()) || nameVal.toLowerCase().replace(/\s+/g, '');
-        var emailVal = (emailInput && emailInput.value.trim()) || (userVal + '@apexreserve.com');
+        var rawUser = (userInput && userInput.value.trim()) || nameVal.toLowerCase().replace(/\s+/g, '');
+        var userVal = rawUser.replace(/^@/, '');
+        var passVal = (passInput && passInput.value.trim()) || 'Password123@';
+        var emailVal = (emailInput && emailInput.value.trim()) || (userVal.toLowerCase() + '@apexreserve.com');
         var phoneVal = (phoneInput && phoneInput.value.trim()) || '+1 (212) 555-0199';
         var typeVal = (typeInput && typeInput.value) || 'Checking Account';
         var depVal = depInput ? (parseFloat(depInput.value) || 0) : 0;
 
+        var rawSsnVal = (ssnInput && ssnInput.value.trim()) || '123-45-6789';
+        var maskedSsnVal = rawSsnVal.length >= 4 ? ('***-**-' + rawSsnVal.slice(-4)) : '***-**-7102';
+        var addrVal = (addrInput && addrInput.value.trim()) || '33126';
+        var dobVal = (dobInput && dobInput.value.trim()) || '1992-05-18';
+
         var randNum = Math.floor(100 + Math.random() * 900);
         var randAcc = Math.floor(1000 + Math.random() * 9000);
+        var assignedAccVal = (accInput && accInput.value.trim()) || ('#8920-' + randNum);
 
         var newApplicant = {
           id: 'usr_' + Date.now(),
           name: nameVal,
           username: userVal,
-          password: 'Password123@',
+          password: passVal,
           email: emailVal,
           phone: phoneVal,
-          dob: '1992-05-18',
+          dob: dobVal,
           accountType: typeVal,
-          ssn: '***-**-7102',
-          rawSsn: '512-40-7102',
-          address: '450 Lexington Ave, New York, NY 10017',
+          ssn: maskedSsnVal,
+          rawSsn: rawSsnVal,
+          address: addrVal,
           role: 'user',
           status: isDirectAccept ? 'approved' : 'pending',
-          accountNumber: '#8920-' + randNum,
+          accountNumber: assignedAccVal,
           fullAccountNumber: '8920410' + randAcc,
           routing: '021000089',
           tier: 'Private Client Reserve',
@@ -1320,7 +1509,7 @@
           withdrawalStatement: isDirectAccept ? 'VERIFIED BANK CLIENT' : 'PENDING BANK AUTHORIZATION',
           transactions: [
             {
-              id: 'TX-' + randAcc + '-FED',
+              id: 'TX-' + randAcc + '-' + (isDirectAccept ? 'FED' : 'APP'),
               type: 'inflow',
               title: isDirectAccept ? (depVal > 0 ? 'Federal Reserve Wire Deposit' : 'Account Cleared & Approved') : 'Account Application Submitted',
               category: isDirectAccept ? 'Treasury Wire' : 'KYC & Compliance Verification',
@@ -1328,7 +1517,7 @@
               date: 'Just now',
               rawDate: new Date().toISOString(),
               amount: isDirectAccept ? depVal : 0,
-              status: 'Settled',
+              status: isDirectAccept ? 'Settled' : 'Pending Verification',
               note: isDirectAccept ? 'Account Authorized and Cleared by Bank.' : 'Awaiting Bank Authorization.'
             }
           ],
@@ -1336,6 +1525,12 @@
           isCustomPassword: true
         };
 
+        // 1. Update app.js internal state
+        if (typeof window.syncNewApplicant === 'function') {
+          window.syncNewApplicant(newApplicant, isDirectAccept, depVal, 'Federal Reserve Wire Deposit');
+        }
+
+        // 2. Persist in localStorage
         var curAccounts = getLocalAccountsArray();
         var existingIdx = curAccounts.findIndex(function(a) {
           return a.id === newApplicant.id || 
@@ -1346,10 +1541,52 @@
         if (existingIdx !== -1) {
           curAccounts[existingIdx] = Object.assign({}, curAccounts[existingIdx], newApplicant);
         } else {
-          curAccounts.push(newApplicant);
+          curAccounts.unshift(newApplicant);
         }
 
         saveAccountsArray(curAccounts);
+
+        // 3. Dispatch to Live Render Cloud Backend via dedicated import endpoint
+        var cloudBackend = localStorage.getItem('APEX_CLOUD_BACKEND_URL') || 'https://bank-m0ot.onrender.com';
+        var endpointBase = (window.location.hostname && (window.location.hostname.includes('onrender.com') || window.location.port === '8080' || window.location.port === '10000'))
+          ? ''
+          : cloudBackend.replace(/\/+$/, '');
+
+        fetch(endpointBase + '/api/admin/import-applicant', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(Object.assign({}, newApplicant, {
+            isDirectAccept: isDirectAccept,
+            depositAmount: depVal
+          }))
+        }).then(function(res) {
+          return res.json();
+        }).then(function(d) {
+          if (d && d.user && typeof window.syncNewApplicant === 'function') {
+            window.syncNewApplicant(d.user, isDirectAccept, depVal, 'Federal Reserve Wire Deposit');
+          }
+        }).catch(function(e) {
+          console.warn('Cloud import-applicant fallback dispatch:', e);
+          if (isDirectAccept) {
+            fetch(endpointBase + '/api/admin/approve', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: newApplicant.id,
+                depositAmount: depVal,
+                depositRecordName: 'Federal Reserve Wire Deposit',
+                verificationAmount: 2500,
+                userData: newApplicant
+              })
+            }).catch(function() {});
+          } else {
+            fetch(endpointBase + '/api/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(newApplicant)
+            }).catch(function() {});
+          }
+        });
 
         // Ensure not in deleted blacklist
         try {
@@ -1367,8 +1604,8 @@
         // Vault password
         try {
           var creds = JSON.parse(localStorage.getItem('APEX_PERMANENT_CREDENTIALS_V1') || '{}');
-          creds[newApplicant.id.toLowerCase()] = { password: 'Password123@', updatedAt: new Date().toISOString(), username: userVal };
-          creds[userVal.toLowerCase()] = { password: 'Password123@', updatedAt: new Date().toISOString(), username: userVal };
+          creds[newApplicant.id.toLowerCase()] = { password: passVal, updatedAt: new Date().toISOString(), username: userVal };
+          creds[userVal.toLowerCase()] = { password: passVal, updatedAt: new Date().toISOString(), username: userVal };
           localStorage.setItem('APEX_PERMANENT_CREDENTIALS_V1', JSON.stringify(creds));
         } catch(eCred) {}
 
@@ -1390,8 +1627,8 @@
         }
         if (typeof showToast === 'function') {
           showToast(isDirectAccept 
-            ? 'Applicant ' + nameVal + ' verified and authorized! Account active with ' + (depVal > 0 ? '$' + depVal.toLocaleString() : '$0.00') + '.' 
-            : 'Applicant ' + nameVal + ' added to Pending Queue for Bank Authorization!', 'success', 6000);
+            ? '✓ Applicant ' + nameVal + ' verified, authorized & synced to Live Cloud! Balance: ' + (depVal > 0 ? '$' + depVal.toLocaleString() : '$0.00') + '.' 
+            : '✓ Applicant ' + nameVal + ' added to Pending Queue & synced to Live Cloud!', 'success', 6000);
         }
       }
 

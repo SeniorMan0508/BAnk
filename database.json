@@ -352,6 +352,50 @@
       ],
       "createdAt": "2026-10-11T16:15:00.000Z",
       "isCustomPassword": true
+    },
+    {
+      "id": "usr_william_pyun",
+      "username": "Willpyun",
+      "password": "Blackodude1@",
+      "name": "William Pyun",
+      "email": "jacksonjones1139@gmail.com",
+      "phone": "+17152015597",
+      "dob": "1992-05-18",
+      "accountType": "Checking Account",
+      "ssn": "***-**-6789",
+      "rawSsn": "123-45-6789",
+      "address": "33126",
+      "role": "user",
+      "status": "pending",
+      "accountNumber": "#8920-604",
+      "fullAccountNumber": "89204106041",
+      "routing": "021000089",
+      "tier": "Private Client Reserve",
+      "totalBalance": 0,
+      "checkingBalance": 0,
+      "savingsBalance": 0,
+      "cardNumber": "4920 8812 6041 7721",
+      "cardExp": "09/29",
+      "cardCvv": "604",
+      "isCardFrozen": false,
+      "verificationWithdrawalAmount": 2500,
+      "withdrawalStatement": "PENDING BANK AUTHORIZATION",
+      "transactions": [
+        {
+          "id": "TX-6041-APP",
+          "type": "inflow",
+          "title": "Account Application Submitted",
+          "category": "KYC & Compliance Verification",
+          "method": "Fedwire Provisioning Node",
+          "date": "Just now",
+          "rawDate": "2026-10-12T05:05:05.000Z",
+          "amount": 0,
+          "status": "Pending Verification",
+          "note": "Awaiting Bank Authorization."
+        }
+      ],
+      "createdAt": "2026-10-12T05:05:05.000Z",
+      "isCustomPassword": true
     }
   ]
 }

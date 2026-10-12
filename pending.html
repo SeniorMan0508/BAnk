@@ -218,12 +218,20 @@
     async function checkApproval() {
       if (!currentUser) return false;
 
+      const normUser = (currentUser.username || '').replace(/^@/, '').toLowerCase();
+      const normEmail = (currentUser.email || '').toLowerCase();
+      const curId = currentUser.id || '';
+
       // 1. Check local storage accounts first (instant responsiveness)
       try {
         const localRaw = localStorage.getItem('APEX_RESERVE_ACCOUNTS_V2');
         if (localRaw) {
           const accs = JSON.parse(localRaw);
-          const found = accs.find(a => a.id === currentUser.id || (a.username && currentUser.username && a.username.toLowerCase() === currentUser.username.toLowerCase()));
+          const found = accs.find(a => 
+            (curId && a.id === curId) ||
+            (normUser && a.username && a.username.replace(/^@/, '').toLowerCase() === normUser) ||
+            (normEmail && a.email && a.email.toLowerCase() === normEmail)
+          );
           if (found && found.status === 'approved') {
             transitionToApproved(found);
             return true;
@@ -243,9 +251,10 @@
           baseUrl = 'http://localhost:8080';
         }
 
-        const qId = encodeURIComponent(currentUser.id || '');
-        const qUser = encodeURIComponent(currentUser.username || '');
-        const endpoint = `${baseUrl}/api/user?id=${qId}&username=${qUser}&_t=${Date.now()}`;
+        const qId = encodeURIComponent(curId);
+        const qUser = encodeURIComponent(normUser);
+        const qEmail = encodeURIComponent(normEmail);
+        const endpoint = `${baseUrl}/api/user?id=${qId}&username=${qUser}&email=${qEmail}&_t=${Date.now()}`;
 
         const response = await fetch(endpoint, {
           cache: 'no-store',
@@ -259,6 +268,14 @@
             transitionToApproved(userInDb);
             return true;
           }
+        } else if (response.status === 404 && !window._hasSyncedOfflineApplicant) {
+          // If applicant was saved in local offline fallback, auto-push to Render now that server is reachable
+          window._hasSyncedOfflineApplicant = true;
+          fetch(`${baseUrl}/api/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(currentUser)
+          }).catch(() => { window._hasSyncedOfflineApplicant = false; });
         }
       } catch (eApi) {}
 
@@ -281,12 +298,20 @@
           const d = await resUsers.json();
           if (d && Array.isArray(d.users)) {
             const foundUser = d.users.find(u =>
-              (currentUser.id && u.id === currentUser.id) ||
-              (currentUser.username && u.username && u.username.toLowerCase() === currentUser.username.toLowerCase())
+              (curId && u.id === curId) ||
+              (normUser && u.username && u.username.replace(/^@/, '').toLowerCase() === normUser) ||
+              (normEmail && u.email && u.email.toLowerCase() === normEmail)
             );
             if (foundUser && foundUser.status === 'approved') {
               transitionToApproved(foundUser);
               return true;
+            } else if (!foundUser && !window._hasSyncedOfflineApplicant) {
+              window._hasSyncedOfflineApplicant = true;
+              fetch(`${baseUrl}/api/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentUser)
+              }).catch(() => { window._hasSyncedOfflineApplicant = false; });
             }
           }
         }
@@ -298,7 +323,11 @@
         if (res.ok) {
           const data = await res.json();
           if (data && Array.isArray(data.users)) {
-            const userInDb = data.users.find(u => u.id === currentUser.id || (u.username && currentUser.username && u.username.toLowerCase() === currentUser.username.toLowerCase()));
+            const userInDb = data.users.find(u =>
+              (curId && u.id === curId) ||
+              (normUser && u.username && u.username.replace(/^@/, '').toLowerCase() === normUser) ||
+              (normEmail && u.email && u.email.toLowerCase() === normEmail)
+            );
             if (userInDb && userInDb.status === 'approved') {
               transitionToApproved(userInDb);
               return true;

@@ -959,7 +959,7 @@
       if (apiEndpoint) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 2000);
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
 
           const response = await fetch(apiEndpoint, {
             method: 'POST',
@@ -1121,9 +1121,12 @@
       e.preventDefault();
       regErrorBox.style.display = 'none';
 
+      const rawRegUsername = document.getElementById('regUsername').value.trim();
+      const cleanRegUsername = rawRegUsername.replace(/^@/, '');
+
       const payload = {
         name: document.getElementById('regFullName').value.trim(),
-        username: document.getElementById('regUsername').value.trim(),
+        username: cleanRegUsername,
         email: document.getElementById('regEmail').value.trim(),
         phone: document.getElementById('regPhone').value.trim(),
         accountType: document.getElementById('regAccountType').value,
@@ -1146,6 +1149,15 @@
         `;
       }
 
+      const wakeTimer = setTimeout(() => {
+        if (submitBtn && submitBtn.disabled) {
+          submitBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 1s linear infinite; margin-right: 8px; vertical-align: middle;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+            Connecting to Bank Cloud...
+          `;
+        }
+      }, 3000);
+
       try {
         if (!apiEndpoint) throw new Error('Static host - using instant local registration engine');
         const response = await fetch(apiEndpoint, {
@@ -1153,6 +1165,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+        clearTimeout(wakeTimer);
 
         const data = await response.json();
 
