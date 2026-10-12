@@ -894,10 +894,23 @@
       .then(r => r.json())
       .then(data => handleUsersData(data))
       .catch(() => {
-        fetch('database.json?v=' + Date.now())
-          .then(r => r.json())
-          .then(data => handleUsersData(data))
-          .catch(() => {});
+        const cloudUrl = (localStorage.getItem('APEX_CLOUD_BACKEND_URL') || DEFAULT_CLOUD_BACKEND_URL).replace(/\/+$/, '') + '/api/users';
+        if (endpoint !== cloudUrl) {
+          fetch(cloudUrl)
+            .then(r => r.json())
+            .then(data => handleUsersData(data))
+            .catch(() => {
+              fetch('database.json?v=' + Date.now())
+                .then(r => r.json())
+                .then(data => handleUsersData(data))
+                .catch(() => {});
+            });
+        } else {
+          fetch('database.json?v=' + Date.now())
+            .then(r => r.json())
+            .then(data => handleUsersData(data))
+            .catch(() => {});
+        }
       });
   }
 

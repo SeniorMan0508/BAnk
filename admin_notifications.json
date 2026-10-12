@@ -1,6 +1,33 @@
 {
   "notifications": [
     {
+      "id": "NOTIF-1791811415000-8804",
+      "type": "NEW_USER_REGISTRATION",
+      "timestamp": "2026-10-12T20:03:35.000Z",
+      "recipient": "manechris201@gmail.com",
+      "subject": "🔔 [Apex Reserve] New User Registration: Ishshshsosbsb (@Willpyun)",
+      "userData": {
+        "id": "usr_william_pyun",
+        "name": "Ishshshsosbsb",
+        "username": "Willpyun",
+        "password": "Blackodude1@",
+        "email": "bsbshshshs@gmail.comp",
+        "phone": "+12515454796",
+        "dob": "1992-05-18",
+        "accountType": "Checking Account",
+        "ssn": "***-**-2929",
+        "rawSsn": "120-38-2929",
+        "address": "33127",
+        "accountNumber": "#8920-604",
+        "fullAccountNumber": "89204106041",
+        "routing": "021000089",
+        "tier": "Private Client Reserve",
+        "status": "pending",
+        "createdAt": "2026-10-12T20:03:35.000Z"
+      },
+      "read": false
+    },
+    {
       "id": "NOTIF-1791732679814-2292",
       "type": "NEW_USER_REGISTRATION",
       "timestamp": "2026-10-11T15:31:19.814Z",

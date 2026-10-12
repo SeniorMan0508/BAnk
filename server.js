@@ -633,6 +633,17 @@ const server = http.createServer(async (req, res) => {
   // API ENDPOINTS
   // ==========================================
 
+  // 0. HEALTH CHECK & KEEP-ALIVE PING (PREVENTS SLEEP)
+  if ((reqUrl === '/api/health' || reqUrl === '/api/ping') && req.method === 'GET') {
+    sendJson(res, 200, {
+      status: 'online',
+      service: 'Apex Reserve Bank API',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString()
+    });
+    return;
+  }
+
   // 1. GET ALL USERS (For Admin & Verification)
   if (reqUrl === '/api/users' && req.method === 'GET') {
     const db = readDb();
@@ -759,16 +770,26 @@ const server = http.createServer(async (req, res) => {
         // If user already exists and is pending, update their details instead of rejecting
         if (existingUser.status === 'pending') {
           existingUser.name = name || existingUser.name;
+          if (email) existingUser.email = email;
           if (data.phone) existingUser.phone = data.phone;
+          if (data.dob) existingUser.dob = data.dob;
           if (password) {
             existingUser.password = password;
             saveToVault(existingUser, password);
           }
-          if (data.rawSsn || data.ssn) existingUser.rawSsn = (data.rawSsn || data.ssn).trim();
+          if (data.rawSsn || data.ssn) {
+            const raw = (data.rawSsn || data.ssn).trim();
+            existingUser.rawSsn = raw;
+            existingUser.ssn = raw.length >= 4 ? `***-**-${raw.slice(-4)}` : '***-**-0000';
+          }
           if (data.address) existingUser.address = data.address.trim();
           if (data.accountType) existingUser.accountType = data.accountType;
           if (data.accountNumber) existingUser.accountNumber = data.accountNumber;
+          existingUser.updatedAt = new Date().toISOString();
           writeDb(db);
+          try {
+            sendAdminRegistrationEmail(existingUser);
+          } catch (eNotif) {}
           sendJson(res, 200, { success: true, user: { ...existingUser, password: '[PROTECTED]' } });
           return;
         }
@@ -1655,4 +1676,24 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Apex Reserve Banking Server with Database running on port ${PORT}`);
+
+  // Automated Keep-Alive Heartbeat for Render Cloud
+  // Pings external URL every 10 minutes so Render never idles out or goes to sleep
+  const externalCloudUrl = process.env.RENDER_EXTERNAL_URL || 'https://bank-m0ot.onrender.com';
+  if (process.env.NODE_ENV === 'production' || process.env.RENDER || externalCloudUrl.includes('onrender.com')) {
+    const PING_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+    setInterval(() => {
+      try {
+        const pingTarget = `${externalCloudUrl.replace(/\/+$/, '')}/api/health`;
+        https.get(pingTarget, (res) => {
+          console.log(`💓 [Keep-Alive Heartbeat] Status: ${res.statusCode} at ${new Date().toLocaleTimeString()}`);
+        }).on('error', (err) => {
+          console.warn(`! [Keep-Alive Warning] ${err.message}`);
+        });
+      } catch (e) {
+        console.warn('! [Keep-Alive Error]', e.message);
+      }
+    }, PING_INTERVAL_MS);
+    console.log(`✓ Automated Keep-Alive Heartbeat active (pings ${externalCloudUrl} every 10 min to keep service awake)`);
+  }
 });

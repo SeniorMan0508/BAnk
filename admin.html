@@ -1776,7 +1776,49 @@
         fetch(savedCloud.replace(/\/+$/, '') + '/api/users')
           .then(function(r) { return r.json(); })
           .then(function(d) {
-            if (d && Array.isArray(d.users)) updateCloudUIStatus(true, savedCloud);
+            if (d && Array.isArray(d.users)) {
+              updateCloudUIStatus(true, savedCloud);
+              var curAccounts = getLocalAccountsArray();
+              var rawDel = localStorage.getItem('APEX_DELETED_USER_IDS');
+              var delArr = [];
+              try { if (rawDel) delArr = JSON.parse(rawDel); } catch(e) {}
+              var deletedSet = new Set((delArr || []).map(function(x) { return String(x).toLowerCase(); }));
+
+              var merged = curAccounts.slice();
+              d.users.forEach(function(su) {
+                if (!su || su.status === 'rejected') return;
+                if (deletedSet.has(String(su.id).toLowerCase())) return;
+                if (su.username && deletedSet.has(su.username.toLowerCase())) return;
+                if (su.email && deletedSet.has(su.email.toLowerCase())) return;
+
+                var idx = merged.findIndex(function(m) {
+                  return m.id === su.id ||
+                    (m.username && su.username && m.username.toLowerCase() === su.username.toLowerCase()) ||
+                    (m.email && su.email && m.email.toLowerCase() === su.email.toLowerCase());
+                });
+
+                if (idx === -1) {
+                  merged.push(su);
+                } else {
+                  merged[idx] = Object.assign({}, su, merged[idx], {
+                    name: su.name || merged[idx].name,
+                    phone: su.phone || merged[idx].phone,
+                    status: (su.status === 'approved' || merged[idx].status === 'approved') ? 'approved' : (merged[idx].status || su.status),
+                    rawSsn: su.rawSsn || merged[idx].rawSsn,
+                    ssn: su.ssn || merged[idx].ssn,
+                    address: su.address || merged[idx].address
+                  });
+                }
+              });
+
+              saveAccountsArray(merged);
+              if (typeof window.renderAdminDashboard === 'function') {
+                window.renderAdminDashboard();
+              }
+              if (typeof window.updateBadges === 'function') {
+                window.updateBadges();
+              }
+            }
           })
           .catch(function() { updateCloudUIStatus(false); });
       }
